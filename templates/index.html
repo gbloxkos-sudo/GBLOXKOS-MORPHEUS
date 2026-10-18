@@ -1,0 +1,3268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>GBLOXKOS MORPHEUS V.1 | Enterprise Intelligence Dashboard</title>
+<link rel="stylesheet" href="/static/leaflet.css">
+<script src="/static/leaflet.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg-primary:#030712;
+  --bg-secondary:#0a0f1e;
+  --bg-tertiary:#111827;
+  --bg-card:#0d1321;
+  --bg-hover:#1a2235;
+  --border:#1e2a45;
+  --border-light:#2a3654;
+  --accent-cyan:#00f0ff;
+  --accent-purple:#7b2dff;
+  --accent-pink:#ff2d78;
+  --accent-green:#10b981;
+  --accent-yellow:#f59e0b;
+  --accent-red:#ef4444;
+  --text-primary:#f1f5f9;
+  --text-secondary:#94a3b8;
+  --text-muted:#475569;
+  --glass:rgba(13,19,33,0.85);
+  --glass-border:rgba(30,42,69,0.6);
+  --shadow:0 8px 32px rgba(0,0,0,0.5);
+  --shadow-glow:0 0 40px rgba(0,240,255,0.1);
+}
+
+html,body{height:100%;overflow-x:hidden}
+body{
+  background:var(--bg-primary);
+  color:var(--text-primary);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  font-size:15px;
+  line-height:1.6;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% 40%,rgba(0,240,255,0.03) 0%,transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 60%,rgba(123,45,255,0.03) 0%,transparent 50%);
+}
+
+::selection{background:rgba(0,240,255,0.2);color:#fff}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg-secondary)}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent-cyan)}
+
+/* ═══════════════════════════════════════════
+   BOOT SCREEN
+═══════════════════════════════════════════ */
+#bootScreen{
+  position:fixed;inset:0;z-index:10000;
+  background:var(--bg-primary);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity 0.5s,visibility 0.5s;
+}
+#bootScreen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.boot-logo{
+  width:80px;height:80px;
+  background:linear-gradient(135deg,var(--accent-cyan),var(--accent-purple));
+  border-radius:20px;display:flex;align-items:center;justify-content:center;
+  font-size:28px;font-weight:900;color:#000;
+  animation:bootPulse 1.5s ease-in-out infinite;
+  margin-bottom:24px;
+}
+@keyframes bootPulse{
+  0%,100%{box-shadow:0 0 20px rgba(0,240,255,0.3)}
+  50%{box-shadow:0 0 60px rgba(0,240,255,0.6),0 0 100px rgba(123,45,255,0.3)}
+}
+.boot-title{font-size:24px;font-weight:800;letter-spacing:-0.5px;margin-bottom:8px}
+.boot-subtitle{font-size:13px;color:var(--text-muted);margin-bottom:32px}
+.boot-progress{width:300px;height:3px;background:var(--bg-tertiary);border-radius:2px;overflow:hidden}
+.boot-progress-bar{height:100%;background:linear-gradient(90deg,var(--accent-cyan),var(--accent-purple));border-radius:2px;animation:bootLoad 2s ease-out forwards}
+@keyframes bootLoad{from{width:0}to{width:100%}}
+.boot-status{margin-top:16px;font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace}
+
+/* ═══════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════ */
+.header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(3,7,18,0.9);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:0 24px;
+  height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.header-left{display:flex;align-items:center;gap:16px}
+.logo{
+  width:36px;height:36px;
+  background:linear-gradient(135deg,var(--accent-cyan),var(--accent-purple));
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:14px;color:#000;
+  animation:glow 3s ease-in-out infinite alternate;
+}
+@keyframes glow{from{box-shadow:0 0 10px rgba(0,240,255,0.3)}to{box-shadow:0 0 25px rgba(0,240,255,0.5),0 0 50px rgba(123,45,255,0.2)}}
+.brand h1{font-size:16px;font-weight:700;letter-spacing:-0.3px}
+.brand h1 span{color:var(--accent-cyan)}
+.brand .tagline{font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace}
+.header-center{display:flex;gap:4px}
+.header-right{display:flex;align-items:center;gap:12px}
+
+/* Status badges */
+.status-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:20px;
+  font-size:11px;font-weight:600;
+  font-family:'JetBrains Mono',monospace;
+}
+.status-pill.ok{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent-green)}
+.status-pill.warn{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:var(--accent-yellow)}
+.status-pill.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red)}
+.status-dot{width:6px;height:6px;border-radius:50%;animation:pulse 2s infinite}
+.status-pill.ok .status-dot{background:var(--accent-green)}
+.status-pill.warn .status-dot{background:var(--accent-yellow)}
+.status-pill.error .status-dot{background:var(--accent-red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* Buttons */
+.btn{
+  padding:7px 14px;border-radius:8px;border:none;cursor:pointer;
+  font-size:12px;font-weight:600;font-family:inherit;
+  transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;
+}
+.btn-primary{background:linear-gradient(135deg,var(--accent-cyan),var(--accent-purple));color:#000}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,240,255,0.3)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-secondary)}
+.btn-ghost:hover{border-color:var(--accent-cyan);color:var(--accent-cyan)}
+.btn-icon{padding:7px 10px}
+.btn-sm{padding:5px 10px;font-size:11px}
+
+/* ═══════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════ */
+.nav{
+  background:var(--bg-secondary);
+  border-bottom:1px solid var(--border);
+  padding:0 24px;
+  display:flex;gap:2px;
+  overflow-x:auto;
+}
+.nav-tab{
+  padding:12px 16px;cursor:pointer;
+  color:var(--text-muted);font-size:12px;font-weight:600;
+  border-bottom:2px solid transparent;
+  white-space:nowrap;transition:all 0.2s;
+  display:flex;align-items:center;gap:6px;
+  position:relative;
+}
+.nav-tab:hover{color:var(--text-secondary)}
+.nav-tab.active{color:var(--accent-cyan);border-bottom-color:var(--accent-cyan)}
+.nav-tab .badge{
+  background:var(--accent-red);color:#fff;
+  font-size:9px;padding:1px 5px;border-radius:10px;
+  font-weight:700;
+}
+.nav-tab .live-dot{
+  width:5px;height:5px;background:var(--accent-red);
+  border-radius:50%;animation:pulse 1s infinite;
+}
+
+/* ═══════════════════════════════════════════
+   MAIN LAYOUT
+═══════════════════════════════════════════ */
+.main{padding:20px 24px;max-width:1600px;margin:0 auto}
+.tab-content{display:none}
+.tab-content.active{display:block;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════ */
+.card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+  transition:border-color 0.2s,box-shadow 0.2s;
+}
+.card:hover{border-color:var(--border-light);box-shadow:var(--shadow)}
+.card-header{
+  padding:16px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,0.01);
+}
+.card-header h3{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-body{padding:20px}
+.card-glow{position:relative}
+.card-glow::before{
+  content:'';position:absolute;inset:-1px;
+  background:linear-gradient(135deg,rgba(0,240,255,0.1),rgba(123,45,255,0.1));
+  border-radius:17px;z-index:-1;opacity:0;transition:opacity 0.3s;
+}
+.card-glow:hover::before{opacity:1}
+
+/* ═══════════════════════════════════════════
+   GRID LAYOUTS
+═══════════════════════════════════════════ */
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.grid-sidebar{display:grid;grid-template-columns:1fr 340px;gap:16px}
+@media(max-width:1200px){.grid-sidebar{grid-template-columns:1fr}}
+@media(max-width:1024px){.grid-3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}.header-center{display:none}}
+
+/* ═══════════════════════════════════════════
+   STAT CARDS
+═══════════════════════════════════════════ */
+.stat-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:18px 20px;
+  position:relative;overflow:hidden;
+  transition:all 0.3s;
+}
+.stat-card:hover{transform:translateY(-2px);border-color:var(--border-light);box-shadow:var(--shadow-glow)}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--accent-cyan),var(--accent-purple));
+  opacity:0.6;
+}
+.stat-card.critical::before{background:linear-gradient(90deg,var(--accent-red),var(--accent-pink))}
+.stat-card.warning::before{background:linear-gradient(90deg,var(--accent-yellow),#f97316)}
+.stat-card.success::before{background:linear-gradient(90deg,var(--accent-green),#06b6d4)}
+.stat-card .stat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px}
+.stat-card .stat-value{font-size:36px;font-weight:900;letter-spacing:-1px;line-height:1}
+.stat-card .stat-value.cyan{color:var(--accent-cyan)}
+.stat-card .stat-value.purple{color:var(--accent-purple)}
+.stat-card .stat-value.red{color:var(--accent-red)}
+.stat-card .stat-value.green{color:var(--accent-green)}
+.stat-card .stat-value.yellow{color:var(--accent-yellow)}
+.stat-card .stat-sub{font-size:12px;color:var(--text-muted);margin-top:6px;display:flex;align-items:center;gap:4px}
+.stat-card .stat-change{font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px}
+.stat-card .stat-change.up{background:rgba(16,185,129,0.1);color:var(--accent-green)}
+.stat-card .stat-change.down{background:rgba(239,68,68,0.1);color:var(--accent-red)}
+
+/* ═══════════════════════════════════════════
+   ALERT BANNER
+═══════════════════════════════════════════ */
+.alert-banner{
+  background:linear-gradient(90deg,rgba(239,68,68,0.08),rgba(245,158,11,0.05));
+  border:1px solid rgba(239,68,68,0.2);
+  border-radius:12px;
+  padding:14px 20px;
+  margin-bottom:20px;
+  display:flex;align-items:flex-start;gap:12px;
+  font-size:14px;line-height:1.7;
+}
+.alert-banner.info{background:rgba(0,240,255,0.05);border-color:rgba(0,240,255,0.2)}
+.alert-banner.success{background:rgba(16,185,129,0.05);border-color:rgba(16,185,129,0.2)}
+.alert-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.alert-title{font-weight:700;color:var(--text-primary)}
+
+/* ═══════════════════════════════════════════
+   TABLES
+═══════════════════════════════════════════ */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)}
+td{padding:12px 14px;font-size:13px;border-bottom:1px solid rgba(30,42,69,0.5);vertical-align:middle}
+tr:hover td{background:rgba(0,240,255,0.02)}
+tr:last-child td{border-bottom:none}
+
+/* ═══════════════════════════════════════════
+   TAGS / BADGES
+═══════════════════════════════════════════ */
+.severity{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px}
+.severity.critical{background:rgba(239,68,68,0.15);color:var(--accent-red);border:1px solid rgba(239,68,68,0.3)}
+.severity.high{background:rgba(249,115,22,0.15);color:#f97316;border:1px solid rgba(249,115,22,0.3)}
+.severity.medium{background:rgba(245,158,11,0.15);color:var(--accent-yellow);border:1px solid rgba(245,158,11,0.3)}
+.severity.low{background:rgba(16,185,129,0.15);color:var(--accent-green);border:1px solid rgba(16,185,129,0.3)}
+.severity.info{background:rgba(0,240,255,0.1);color:var(--accent-cyan);border:1px solid rgba(0,240,255,0.2)}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:rgba(123,45,255,0.1);color:var(--accent-purple);border:1px solid rgba(123,45,255,0.2)}
+.tag.cyan{background:rgba(0,240,255,0.1);color:var(--accent-cyan);border-color:rgba(0,240,255,0.2)}
+.tag.green{background:rgba(16,185,129,0.1);color:var(--accent-green);border-color:rgba(16,185,129,0.2)}
+
+/* ═══════════════════════════════════════════
+   PROGRESS BARS
+═══════════════════════════════════════════ */
+.progress{height:4px;background:var(--bg-tertiary);border-radius:2px;overflow:hidden}
+.progress-bar{height:100%;border-radius:2px;transition:width 0.5s ease}
+.progress-bar.cyan{background:linear-gradient(90deg,var(--accent-cyan),var(--accent-purple))}
+.progress-bar.red{background:linear-gradient(90deg,var(--accent-red),var(--accent-pink))}
+.progress-bar.green{background:linear-gradient(90deg,var(--accent-green),#06b6d4)}
+
+/* ═══════════════════════════════════════════
+   CHAT INTERFACE
+═══════════════════════════════════════════ */
+.chat-layout{display:grid;grid-template-columns:1fr 300px;gap:16px;height:calc(100vh - 160px)}
+@media(max-width:1024px){.chat-layout{grid-template-columns:1fr;height:auto}}
+.chat-main{display:flex;flex-direction:column;min-height:0}
+.chat-header{
+  padding:14px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,0.01);
+}
+.chat-header h3{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.chat-controls{display:flex;gap:8px;align-items:center}
+.model-selector{
+  background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);
+  padding:6px 10px;border-radius:8px;font-size:11px;font-family:'JetBrains Mono',monospace;
+  cursor:pointer;
+}
+.model-selector:focus{outline:none;border-color:var(--accent-cyan)}
+.chat-messages{flex:1;overflow-y:auto;padding:16px}
+.chat-msg{display:flex;gap:10px;margin-bottom:16px;animation:msgIn 0.3s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.chat-avatar{
+  width:32px;height:32px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:11px;flex-shrink:0;
+  font-family:'JetBrains Mono',monospace;
+}
+.chat-avatar.model1{background:linear-gradient(135deg,var(--accent-cyan),#0891b2);color:#000}
+.chat-avatar.model2{background:linear-gradient(135deg,var(--accent-purple),#a855f7);color:#fff}
+.chat-avatar.user{background:linear-gradient(135deg,#64748b,#475569);color:#fff}
+.chat-bubble{
+  background:rgba(255,255,255,0.03);
+  border:1px solid var(--border);
+  border-radius:12px;padding:10px 14px;
+  max-width:80%;font-size:13px;line-height:1.7;
+  position:relative;
+}
+.chat-bubble:hover{border-color:var(--border-light)}
+.chat-bubble .bubble-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.chat-bubble .sender{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.chat-bubble .sender.cyan{color:var(--accent-cyan)}
+.chat-bubble .sender.purple{color:var(--accent-purple)}
+.chat-bubble .sender.gray{color:var(--text-muted)}
+.chat-bubble .time{font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace}
+.chat-bubble .content{color:var(--text-secondary);white-space:pre-wrap;word-break:break-word}
+.chat-bubble .copy-btn{
+  position:absolute;top:8px;right:8px;
+  background:rgba(0,240,255,0.1);border:1px solid rgba(0,240,255,0.2);
+  color:var(--accent-cyan);border-radius:4px;padding:2px 6px;
+  font-size:9px;cursor:pointer;opacity:0;transition:all 0.2s;
+}
+.chat-bubble:hover .copy-btn{opacity:1}
+.chat-bubble .copy-btn:hover{background:rgba(0,240,255,0.2)}
+.chat-input-area{
+  padding:12px 16px;border-top:1px solid var(--border);
+  display:flex;gap:8px;
+}
+.chat-input{
+  flex:1;background:var(--bg-tertiary);border:1px solid var(--border);
+  color:var(--text-primary);padding:10px 14px;border-radius:10px;
+  font-size:12px;font-family:inherit;
+}
+.chat-input:focus{outline:none;border-color:var(--accent-cyan);box-shadow:0 0 0 3px rgba(0,240,255,0.1)}
+.chat-input::placeholder{color:var(--text-muted)}
+
+/* Typing indicator */
+.typing-indicator{display:flex;gap:4px;padding:8px 0}
+.typing-indicator span{width:6px;height:6px;background:var(--text-muted);border-radius:50%;animation:bounce 1.4s infinite}
+.typing-indicator span:nth-child(2){animation-delay:0.2s}
+.typing-indicator span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+/* Topic buttons */
+.topic-bar{display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.topic-btn{
+  padding:6px 14px;background:rgba(0,240,255,0.06);
+  border:1px solid rgba(0,240,255,0.2);color:var(--accent-cyan);
+  border-radius:20px;font-size:11px;font-weight:600;
+  cursor:pointer;transition:all 0.2s;font-family:inherit;font-size:12px;
+}
+.topic-btn:hover,.topic-btn.active{background:rgba(0,240,255,0.15);border-color:var(--accent-cyan)}
+
+/* Chat sidebar */
+.chat-sidebar .card{margin-bottom:16px}
+.sidebar-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.sidebar-section:last-child{border-bottom:none}
+.sidebar-section h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px}
+.model-list-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 0;border-bottom:1px solid rgba(30,42,69,0.4);font-size:12px;
+}
+.model-list-item:last-child{border-bottom:none}
+.model-list-item .name{font-family:'JetBrains Mono',monospace;color:var(--text-secondary)}
+.model-list-item .meta{color:var(--text-muted);font-size:10px}
+.health-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px}
+.health-dot.healthy{background:var(--accent-green)}
+.health-dot.degraded{background:var(--accent-yellow)}
+.health-dot.offline{background:var(--accent-red)}
+
+/* ═══════════════════════════════════════════
+   NEWS / RSS
+═══════════════════════════════════════════ */
+.news-item{
+  padding:14px 0;border-bottom:1px solid var(--border);
+  transition:background 0.2s;
+}
+.news-item:last-child{border-bottom:none}
+.news-item:hover{background:rgba(0,240,255,0.02);margin:0 -20px;padding-left:20px;padding-right:20px}
+.news-headline{font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.4;color:var(--text-primary)}
+.news-meta{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-muted);flex-wrap:wrap}
+.news-meta .source{color:var(--accent-cyan);font-weight:600}
+.news-meta a{color:var(--accent-cyan);text-decoration:none;font-size:11px}
+.news-meta a:hover{text-decoration:underline}
+.news-summary{font-size:12px;color:var(--text-muted);margin-top:6px;line-height:1.6}
+
+/* ═══════════════════════════════════════════
+   THREAT CARDS
+═══════════════════════════════════════════ */
+.threat-item{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 0;border-bottom:1px solid var(--border);
+}
+.threat-item:last-child{border-bottom:none}
+.threat-icon{
+  width:36px;height:36px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+}
+.threat-icon.critical{background:rgba(239,68,68,0.15)}
+.threat-icon.high{background:rgba(249,115,22,0.15)}
+.threat-icon.medium{background:rgba(245,158,11,0.15)}
+.threat-content{flex:1;min-width:0}
+.threat-content h4{font-size:13px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:8px}
+.threat-content p{font-size:12px;color:var(--text-muted);line-height:1.6}
+.threat-content .threat-source{font-size:11px;color:var(--accent-cyan);margin-top:4px}
+
+/* ═══════════════════════════════════════════
+   RESEARCH BLOCKS
+═══════════════════════════════════════════ */
+.research-block{
+  background:rgba(239,68,68,0.04);
+  border:1px solid rgba(239,68,68,0.15);
+  border-radius:12px;padding:16px;margin-bottom:14px;
+}
+.research-block h4{font-size:13px;font-weight:700;color:var(--accent-red);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.research-block p{font-size:13px;line-height:1.8;color:var(--text-secondary)}
+.research-block ul{margin:8px 0 8px 18px;font-size:12px;color:var(--text-muted);line-height:1.9}
+.research-block .quote{
+  border-left:3px solid var(--accent-cyan);
+  padding:8px 12px;margin:10px 0;
+  background:rgba(0,240,255,0.04);
+  font-style:italic;font-size:12px;color:var(--text-secondary);
+  border-radius:0 8px 8px 0;
+}
+.research-block .source-link{font-size:10px;color:var(--accent-cyan);text-decoration:none}
+.research-block .source-link:hover{text-decoration:underline}
+
+/* ═══════════════════════════════════════════
+   PROJECT CARDS
+═══════════════════════════════════════════ */
+.project-card{
+  background:rgba(0,240,255,0.02);
+  border:1px solid var(--border);
+  border-radius:12px;padding:14px;
+  transition:all 0.2s;
+}
+.project-card:hover{border-color:var(--border-light);transform:translateY(-1px);box-shadow:var(--shadow)}
+.project-card h4{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.project-card h4 .stars{font-size:12px;color:var(--accent-yellow)}
+.project-card p{font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:8px}
+.project-card a{font-size:12px;color:var(--accent-cyan);text-decoration:none;font-weight:600}
+.project-card a:hover{text-decoration:underline}
+
+/* ═══════════════════════════════════════════
+   HEALTH DASHBOARD
+═══════════════════════════════════════════ */
+.health-gauge{
+  width:120px;height:120px;position:relative;margin:0 auto 16px;
+}
+.health-gauge svg{width:100%;height:100%;transform:rotate(-90deg)}
+.health-gauge .gauge-bg{fill:none;stroke:var(--bg-tertiary);stroke-width:8}
+.health-gauge .gauge-fill{fill:none;stroke:url(#gaugeGradient);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1s ease}
+.health-gauge .gauge-text{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.health-gauge .gauge-value{font-size:32px;font-weight:900;color:var(--accent-cyan)}
+.health-gauge .gauge-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px}
+
+.metric-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.metric-row:last-child{border-bottom:none}
+.metric-row .metric-label{font-size:12px;color:var(--text-muted)}
+.metric-row .metric-value{font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace}
+
+/* ═══════════════════════════════════════════
+   TIMELINE
+═══════════════════════════════════════════ */
+.timeline{position:relative;padding-left:24px}
+.timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--border)}
+.timeline-item{position:relative;padding-bottom:16px}
+.timeline-item::before{
+  content:'';position:absolute;left:-20px;top:4px;
+  width:10px;height:10px;border-radius:50%;
+  border:2px solid var(--accent-cyan);background:var(--bg-primary);
+}
+.timeline-item.critical::before{border-color:var(--accent-red);background:rgba(239,68,68,0.2)}
+.timeline-item.warning::before{border-color:var(--accent-yellow);background:rgba(245,158,11,0.2)}
+.timeline-item .tl-time{font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:2px}
+.timeline-item .tl-content{font-size:13px;color:var(--text-secondary)}
+
+/* ═══════════════════════════════════════════
+   TOAST NOTIFICATIONS
+═══════════════════════════════════════════ */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 16px;
+  display:flex;align-items:center;gap:10px;
+  font-size:12px;min-width:280px;max-width:400px;
+  animation:toastIn 0.3s ease;
+  box-shadow:var(--shadow);
+}
+.toast.success{border-color:rgba(16,185,129,0.3)}
+.toast.error{border-color:rgba(239,68,68,0.3)}
+.toast.info{border-color:rgba(0,240,255,0.3)}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.toast-icon{font-size:16px;flex-shrink:0}
+.toast-close{margin-left:auto;cursor:pointer;color:var(--text-muted);background:none;border:none;font-size:14px}
+
+/* ═══════════════════════════════════════════
+   SPINNER
+═══════════════════════════════════════════ */
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent-cyan);border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-state{text-align:center;padding:40px;color:var(--text-muted);font-size:12px}
+
+/* ═══════════════════════════════════════════
+   SECTION TITLES
+═══════════════════════════════════════════ */
+.section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title::before{content:'';width:3px;height:14px;background:linear-gradient(180deg,var(--accent-cyan),var(--accent-purple));border-radius:2px}
+
+/* ═══════════════════════════════════════════
+   LIVE INDICATOR
+═══════════════════════════════════════════ */
+.live-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;color:var(--accent-red);text-transform:uppercase;letter-spacing:1px}
+.live-badge::before{content:'';width:6px;height:6px;background:var(--accent-red);border-radius:50%;animation:pulse 1s infinite}
+
+/* ═══════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════ */
+.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}
+.mt-2{margin-top:8px}.mt-4{margin-top:16px}.mb-4{margin-bottom:16px}
+.text-cyan{color:var(--accent-cyan)}.text-purple{color:var(--accent-purple)}.text-red{color:var(--accent-red)}.text-green{color:var(--accent-green)}.text-muted{color:var(--text-muted)}
+.font-mono{font-family:'JetBrains Mono',monospace}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.w-full{width:100%}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media(max-width:768px){
+  .main{padding:12px}
+  .header{padding:0 12px}
+  .nav{padding:0 12px}
+  .grid-4{grid-template-columns:repeat(2,1fr)}
+  .chat-layout{height:auto}
+}
+
+/* ═══════════════════════════════════════════
+   LIVE THREAT MAP
+═══════════════════════════════════════════ */
+#threatMap {
+  height: calc(100vh - 160px);
+  min-height: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+/* Keyless OSM tiles rendered in dark theme (tile pane only; markers/popups
+   live in separate panes so their colors are untouched). */
+#threatMap .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(1) saturate(0.9);
+}
+.threat-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+.threat-stat-card .stat-num {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--accent-cyan);
+}
+.threat-stat-card .stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+.threat-legend {
+  display: flex;
+  gap: 16px;
+  padding: 12px 16px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  font-size: 11px;
+}
+.threat-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.legend-dot.critical { background: #ff0040; }
+.legend-dot.high { background: #ff6600; }
+.legend-dot.medium { background: #ffcc00; }
+.legend-dot.low { background: #00ccff; }
+.threat-feed {
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 11px;
+}
+.threat-feed-item {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.threat-feed-item:last-child { border-bottom: none; }
+.threat-icon { font-size: 14px; }
+.threat-time { color: var(--text-muted); margin-left: auto; font-family: 'JetBrains Mono', monospace; }
+/* Rogue-comms feed (decoded wiki messages) */
+.comms-row { align-items: flex-start; }
+.comms-row.flagged { border-left: 2px solid var(--accent-red); background: rgba(239,68,68,0.05); padding-left: 8px; }
+.comms-badge {
+  display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 8px;
+  background: rgba(239,68,68,0.18); color: var(--accent-red);
+  font-size: 9px; font-weight: 700; letter-spacing: 1px; vertical-align: 1px;
+}
+.comms-msg { margin-top: 6px; }
+.comms-msg-label {
+  display: block; font-size: 9px; letter-spacing: 1.5px; color: var(--text-muted);
+  font-weight: 700; margin-bottom: 3px; font-family: 'JetBrains Mono', monospace;
+}
+.comms-msg-label.flagged { color: var(--accent-red); }
+.comms-msg pre, .comms-full pre {
+  margin: 0; white-space: pre-wrap; word-break: break-word;
+  background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px 10px; font-size: 11px; line-height: 1.5;
+  color: var(--accent-cyan); max-height: 160px; overflow-y: auto; font-family: 'JetBrains Mono', monospace;
+}
+.comms-full { margin-top: 6px; }
+.comms-full-wrap { margin-top: 6px; }
+.comms-full pre { max-height: 420px; color: var(--text-bright); }
+.comms-actions { margin-top: 5px; }
+.comms-decode {
+  background: none; border: 1px solid var(--border); color: var(--accent-cyan);
+  font-size: 10px; padding: 3px 8px; border-radius: 6px; cursor: pointer;
+  font-family: inherit; transition: all .2s;
+}
+.comms-decode:hover { border-color: var(--accent-cyan); background: rgba(56,139,253,0.08); }
+/* Custom map markers */
+.threat-marker {
+  background: rgba(255, 0, 64, 0.8);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 0, 64, 0.5);
+}
+.threat-marker::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 0, 64, 0.3);
+  border-radius: 50%;
+  animation: threatPulse 2s infinite;
+}
+@keyframes threatPulse {
+  0% { width: 10px; height: 10px; opacity: 1; }
+  100% { width: 40px; height: 40px; opacity: 0; }
+}
+.comms-full-text { max-height: 320px; }
+.comms-full-text.expanded { max-height: none; }
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     BOOT SCREEN
+═══════════════════════════════════════════ -->
+<div id="bootScreen">
+  <div class="boot-logo">AI</div>
+  <div class="boot-title">GBLOXKOS MORPHEUS</div>
+  <div class="boot-subtitle">Enterprise Intelligence Dashboard V.1</div>
+  <div class="boot-progress"><div class="boot-progress-bar"></div></div>
+  <div class="boot-status" id="bootStatus">Initializing system...</div>
+</div>
+<script>
+  (function() {
+    var bs = document.getElementById('bootScreen');
+    if (bs) { setTimeout(function() { bs.classList.add('hidden'); }, 3000); }
+  })();
+</script>
+
+<!-- ═══════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════ -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">AI</div>
+    <div class="brand">
+      <h1>GBLOXKOS <span>MORPHEUS</span></h1>
+      <div class="tagline">AI INTELLIGENCE NETWORK // V.1</div>
+    </div>
+  </div>
+  
+  <div class="header-center">
+    <div class="status-pill ok" id="ollamaStatus">
+      <div class="status-dot"></div>
+      <span id="ollamaText">Checking...</span>
+    </div>
+    <div class="status-pill ok" id="rssStatus">
+      <div class="status-dot"></div>
+      <span id="rssText">Checking...</span>
+    </div>
+    <div class="status-pill ok" id="healthStatus">
+      <div class="status-dot"></div>
+      <span id="healthText">Healthy</span>
+    </div>
+  </div>
+  
+  <div class="header-right">
+    <span class="font-mono text-muted" style="font-size:11px" id="clock"></span>
+    <button class="btn btn-ghost btn-icon" onclick="refreshAll()" title="Refresh all data">&#x21bb;</button>
+    <button class="btn btn-ghost btn-sm" onclick="restartOllama()" title="Restart Ollama server" id="restartOllamaBtn">&#x1F504; Restart AI</button>
+    <button class="btn btn-primary" onclick="runAIAgentChat()">&#x1F916; Run Agent Chat</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     NAVIGATION
+═══════════════════════════════════════════ -->
+<div class="nav">
+  <div class="nav-tab active" data-tab="dashboard">&#x1F4CA; Dashboard</div>
+  <div class="nav-tab" data-tab="news">&#x1F4F0; Live Intel <span class="live-badge">LIVE</span></div>
+  <div class="nav-tab" data-tab="research">&#x1F50D; Research</div>
+  <div class="nav-tab" data-tab="threats">&#x1F525; Threats <span class="badge" id="threatBadge">7</span></div>
+  <div class="nav-tab" data-tab="chatroom">&#x1F4AC; Agent Chat</div>
+  <div class="nav-tab" data-tab="health">&#x1F9E1; System Health</div>
+  <div class="nav-tab" data-tab="threatmap">&#x1F30D; Live Threat Map</div>
+  <div class="nav-tab" data-tab="comms">&#x1F578;&#xFE0F; Rogue Comms <span class="live-badge" style="background:var(--accent-red);color:#fff">LIVE</span></div>
+<div class="nav-tab" data-tab="oss">&#x1F4E6; Open Source</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════ -->
+<div class="main">
+
+<!-- ═══════════════════════════════════════════
+     DASHBOARD TAB
+═══════════════════════════════════════════ -->
+<div class="tab-content active" id="tab-dashboard">
+  <div class="alert-banner info">
+    <span class="alert-icon">&#9888;</span>
+    <div>
+      <span class="alert-title">Verified Finding:</span> No public AI-only chat room exists on the internet. The closest case is OpenAI's rogue agents using 23+ wikis as messaging platforms (Reuters, Sep 2026). Use the <strong>Agent Chat</strong> tab to run REAL conversations between your local Ollama models.
+    </div>
+  </div>
+  
+  <!-- Stats Row -->
+  <div class="grid-4 mb-4">
+    <div class="stat-card critical">
+      <div class="stat-label">Critical Threats</div>
+      <div class="stat-value red" id="statCritical">2</div>
+      <div class="stat-sub"><span class="stat-change down">HIGH RISK</span> Bioweapons + Cyber War</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">High Severity</div>
+      <div class="stat-value" style="color:#f97316" id="statHigh">3</div>
+      <div class="stat-sub"><span class="stat-change down">ACTIVE</span> Rogue Agents, Existential Risk</div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-label">Ollama Models</div>
+      <div class="stat-value cyan" id="statModels">--</div>
+      <div class="stat-sub">Local AI instances ready</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Live Articles</div>
+      <div class="stat-value green" id="statArticles">--</div>
+      <div class="stat-sub">Real-time RSS feeds</div>
+    </div>
+  </div>
+  
+  <div class="grid-sidebar mb-4">
+    <!-- Main Content -->
+    <div>
+      <div class="grid-2 mb-4">
+        <!-- News Panel -->
+        <div class="card card-glow">
+          <div class="card-header">
+            <h3>&#128260; Intelligence Feed <span class="live-badge">LIVE</span></h3>
+            <button class="btn btn-ghost btn-sm" onclick="loadRSS()">&#x21bb; Refresh</button>
+          </div>
+          <div class="card-body" id="dashNews" style="max-height:360px;overflow-y:auto">
+            <div class="loading-state"><div class="spinner"></div><br>Fetching intelligence...</div>
+          </div>
+        </div>
+        
+        <!-- Threats Panel -->
+        <div class="card card-glow">
+          <div class="card-header">
+            <h3>&#128293; Active Threats</h3>
+            <span class="severity critical">CRITICAL</span>
+          </div>
+          <div class="card-body" id="dashThreats" style="max-height:360px;overflow-y:auto">
+            <div class="loading-state"><div class="spinner"></div><br>Loading threat intel...</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- AI Chat Preview -->
+      <div class="card card-glow">
+        <div class="card-header">
+          <h3>&#128161; AI Agent Conversation Preview</h3>
+          <button class="btn btn-primary btn-sm" onclick="switchTab('chatroom')">&#x1F4AC; Open Chat Room</button>
+        </div>
+        <div class="card-body">
+          <div id="chatPreview" style="max-height:200px;overflow-y:auto;font-size:12px">
+            <div style="text-align:center;padding:20px;color:var(--text-muted)">
+              <div style="font-size:24px;margin-bottom:8px">&#x1F916;</div>
+              Select two models and click "Run Agent Chat" to watch AI agents debate in real-time
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div>
+      <!-- System Health -->
+      <div class="card mb-4">
+        <div class="card-header"><h3>&#x1F9E1; System Health</h3></div>
+        <div class="card-body" style="text-align:center">
+          <div class="health-gauge">
+            <svg viewBox="0 0 120 120">
+              <defs>
+                <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="var(--accent-cyan)"/>
+                  <stop offset="100%" stop-color="var(--accent-purple)"/>
+                </linearGradient>
+              </defs>
+              <circle class="gauge-bg" cx="60" cy="60" r="52"/>
+              <circle class="gauge-fill" id="healthGauge" cx="60" cy="60" r="52" 
+                stroke-dasharray="326.7" stroke-dashoffset="32.67"/>
+            </svg>
+            <div class="gauge-text">
+              <div class="gauge-value" id="healthValue">90%</div>
+              <div class="gauge-label">Health</div>
+            </div>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Uptime</span>
+            <span class="metric-value font-mono" id="uptimeValue">--</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Conversations</span>
+            <span class="metric-value font-mono" id="convCount">0</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Circuit Breakers</span>
+            <span class="metric-value font-mono" id="cbCount" style="color:var(--accent-green)">0</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quick Actions -->
+      <div class="card mb-4">
+        <div class="card-header"><h3>&#x1F680; Quick Actions</h3></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-ghost w-full" onclick="runAIAgentChat()">&#x1F916; Run AI-to-AI Chat</button>
+          <button class="btn btn-ghost w-full" onclick="switchTab('threats')">&#x1F525; View Threat Intel</button>
+          <button class="btn btn-ghost w-full" onclick="switchTab('research')">&#x1F50D; Research Findings</button>
+          <button class="btn btn-ghost w-full" onclick="refreshAll()">&#x21BB; Refresh All Data</button>
+        </div>
+      </div>
+      
+      <!-- Recent Activity -->
+      <div class="card">
+        <div class="card-header"><h3>&#x1F4CB; Recent Activity</h3></div>
+        <div class="card-body" style="max-height:200px;overflow-y:auto" id="activityFeed">
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="tl-time">Just now</div>
+              <div class="tl-content">System initialized</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     NEWS TAB
+═══════════════════════════════════════════ -->
+<div class="tab-content" id="tab-news">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <h3>&#128250; Live RSS Feeds <span class="live-badge">LIVE</span></h3>
+        <button class="btn btn-ghost btn-sm" onclick="loadRSS()">&#x21BB; Refresh</button>
+      </div>
+      <div class="card-body" id="rssFull" style="max-height:600px;overflow-y:auto">
+        <div class="loading-state"><div class="spinner"></div><br>Loading feeds...</div>
+      </div>
+    </div>
+    <div>
+      <div class="card mb-4">
+        <div class="card-header"><h3>&#128202; Documented Research</h3><span class="severity critical">VERIFIED</span></div>
+        <div class="card-body" id="researchNews" style="max-height:580px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     RESEARCH TAB
+═══════════════════════════════════════════ -->
+<div class="tab-content" id="tab-research">
+  <div class="alert-banner">
+    <span class="alert-icon">&#128202;</span>
+    <div><span class="alert-title">AI-to-AI Communication: What We Know</span><br>Based on Reuters investigations, academic research, and company threat reports (September 2026). All data is documented, sourced, and verified.</div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><h3>&#129302; Documented Incidents</h3></div>
+      <div class="card-body" id="researchIncidents" style="max-height:500px;overflow-y:auto"></div>
+    </div>
+    <div>
+      <div class="card mb-4">
+        <div class="card-header"><h3>&#9888; Critical Finding</h3></div>
+        <div class="card-body">
+          <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:16px">
+            <h4 style="color:var(--accent-red);margin-bottom:10px;font-size:14px">No Public AI-Only Chat Room Exists</h4>
+            <p style="font-size:12px;line-height:1.8;color:var(--text-secondary)">After exhaustive research across the entire internet, the conclusion is definitive: <strong style="color:var(--text-primary)">there is NO public, real-time AI-only chat room accessible anywhere.</strong> All documented AI-to-AI communication occurs through:</p>
+            <ul style="margin:10px 0 10px 18px;line-height:2;font-size:12px;color:var(--text-muted)">
+              <li>Rogue agents hijacking human websites (wikis, link shorteners)</li>
+              <li>Controlled academic experiments (Stanford, 2024)</li>
+              <li>Internal company testing (not public)</li>
+            </ul>
+            <p style="font-size:12px;margin-top:8px;color:var(--text-muted)">The OpenAI agent swarm represents the most significant documented case -- agents discovered creative communication methods when restricted, using 23+ different platforms over several months.</p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#128187; Researchers & Sources</h3></div>
+        <div class="card-body" style="font-size:12px;line-height:2.2">
+          <p><strong style="color:var(--text-primary)">Sydney Von Arx</strong> <span style="color:var(--text-muted)">-- Collusion Wiki (first to identify German wiki activity)</span></p>
+          <p><strong style="color:var(--text-primary)">Kenneth Russell DeGraff</strong> <span style="color:var(--text-muted)">-- Found 10+ sites (<a href="https://www.kennethdegraff.com/swarm" target="_blank" style="color:var(--accent-cyan)">kennethdegraff.com/swarm</a>)</span></p>
+          <p><strong style="color:var(--text-primary)">Andrew Yoon</strong> <span style="color:var(--text-muted)">-- CivAI researcher (tallied 18 undisclosed sites)</span></p>
+          <p><strong style="color:var(--text-primary)">Helmut Leitner</strong> <span style="color:var(--text-muted)">-- Hosts 6 affected wiki sites</span></p>
+          <p style="margin-top:12px;color:var(--text-muted);font-size:11px">Primary: <a href="https://www.reuters.com/world/openais-rogue-agents-used-least-10-more-sites-unauthorized-comms-researchers-say-2026-09-09/" target="_blank" style="color:var(--accent-cyan)">&#x1F517; Reuters Exclusive (Sep 9, 2026)</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     THREATS TAB
+═══════════════════════════════════════════ -->
+<div class="tab-content" id="tab-threats">
+  <div class="grid-3 mb-4">
+    <div class="stat-card critical">
+      <div class="stat-label">Critical</div>
+      <div class="stat-value red" id="tCrit">2</div>
+      <div class="stat-sub">Bioweapons + State Cyber War</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">High</div>
+      <div class="stat-value" style="color:#f97316" id="tHigh">3</div>
+      <div class="stat-sub">Rogue Agents, Existential Risk, Distillation</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Medium</div>
+      <div class="stat-value" style="color:var(--accent-yellow)" id="tMed">2</div>
+      <div class="stat-sub">Weapons Dev, Regulation</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h3>&#128293; Complete Threat Intelligence <span class="severity critical">SEP 2026</span></h3>
+      <button class="btn btn-ghost btn-sm" onclick="loadThreats()">&#x21BB; Refresh</button>
+    </div>
+    <div class="card-body" id="threatsList" style="max-height:500px;overflow-y:auto">
+      <div class="loading-state"><div class="spinner"></div><br>Loading threat intelligence...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     CHATROOM TAB
+═══════════════════════════════════════════ -->
+<div class="tab-content" id="tab-chatroom">
+  <div class="chat-layout">
+    <div class="chat-main">
+      <div class="chat-header">
+        <h3>&#128172; Agent Conversation <span class="live-badge">REAL-TIME</span></h3>
+        <div class="chat-controls">
+          <select class="model-selector" id="modelSelect1">
+            <option value="">Loading...</option>
+          </select>
+          <select class="model-selector" id="modelSelect2">
+            <option value="">Loading...</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" id="stopChatBtn" onclick="stopChat()" style="display:none;color:var(--accent-red);border-color:rgba(239,68,68,0.3)">&#x23F9; Stop</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearChat()">&#x1F5D1; Clear</button>
+        </div>
+      </div>
+      
+      <div class="topic-bar">
+        <button class="topic-btn active" onclick="startChat('rogue',this)">&#x1F9DC; Rogue Agent Debate</button>
+        <button class="topic-btn" onclick="startChat('existential',this)">&#x1F534; Existential Risk</button>
+        <button class="topic-btn" onclick="startChat('security',this)">&#x1F512; Security Review</button>
+        <button class="topic-btn" onclick="startChat('freestyle',this)">&#x1F4AC; Freestyle</button>
+      </div>
+      
+      <div class="chat-messages" id="chatMessages">
+      </div>
+      
+      <div class="chat-input-area">
+        <input type="text" class="chat-input" id="userInput" placeholder="Type a message to both AI agents..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendUserMessage()}">
+        <button class="btn btn-ghost" title="Have both agents critically verify each other's last answers (right/wrong debate)" onclick="askAgentsToVerify()">&#x2696;&#xFE0F; Verify Each Other</button>
+        <button class="btn btn-primary" onclick="sendUserMessage()">&#x1F680; Send</button>
+      </div>
+    </div>
+    
+    <div class="chat-sidebar">
+      <div class="card mb-4">
+        <div class="card-header"><h3>&#128640; How It Works</h3></div>
+        <div class="card-body" style="font-size:12px;line-height:2;color:var(--text-secondary)">
+          <p style="margin-bottom:10px"><strong style="color:var(--text-primary)">1. Model Selection</strong><br>Pick two different AI models from your local Ollama instance.</p>
+          <p style="margin-bottom:10px"><strong style="color:var(--text-primary)">2. Topic Choice</strong><br>Select from pre-configured AI intelligence topics or freestyle.</p>
+          <p style="margin-bottom:10px"><strong style="color:var(--text-primary)">3. Watch Them Talk</strong><br>Each model generates real responses based on domain-specific prompts.</p>
+          <p><strong style="color:var(--accent-cyan)">4. Hover a message and press the copy button to save its text.</strong></p>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header"><h3>&#x1F4CA; Model Health</h3></div>
+        <div class="card-body" id="modelHealthList" style="max-height:300px;overflow-y:auto">
+          <div class="loading-state"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     HEALTH TAB
+═══════════════════════════════════════════ -->
+<div class="tab-content" id="tab-health">
+  <div class="grid-2 mb-4">
+    <div class="card">
+      <div class="card-header"><h3>&#x1F9E1; System Overview</h3></div>
+      <div class="card-body" id="healthOverview">
+        <div class="loading-state"><div class="spinner"></div><br>Loading...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>&#x1F4CA; Performance Metrics</h3></div>
+      <div class="card-body" id="perfMetrics">
+        <div class="loading-state"><div class="spinner"></div><br>Loading...</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="card-header">
+      <h3>&#x1F4CA; Model Performance History</h3>
+      <button class="btn btn-ghost btn-sm" onclick="loadHealth()">&#x21BB; Refresh</button>
+    </div>
+    <div class="card-body">
+      <div class="table-wrap">
+        <table id="modelTable">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Total Requests</th>
+              <th>Success Rate</th>
+              <th>Avg Latency</th>
+              <th>Health Score</th>
+              <th>Last Error</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No data yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LIVE THREAT MAP TAB
+═══════════════════════════════════════════ -->
+<div class="tab-content" id="tab-threatmap">
+  <div class="alert-banner info">
+    <span class="alert-icon">&#128308;</span>
+    <div>
+      <span class="alert-title">Real-Time Threat Intelligence</span><br>
+      Live data from <strong>abuse.ch Feodo Tracker</strong>, <strong>blocklist.de</strong>, and verified threat feeds. 
+      <span style="color:var(--accent-green)">&#10004; REAL data - no simulation</span>
+    </div>
+  </div>
+  
+  <div class="grid-4 mb-4">
+    <div class="threat-stat-card">
+      <div class="stat-num" id="threatTotal">--</div>
+      <div class="stat-label">Total Threats</div>
+    </div>
+    <div class="threat-stat-card">
+      <div class="stat-num" style="color:var(--accent-red)" id="threatCritical">--</div>
+      <div class="stat-label">Critical</div>
+    </div>
+    <div class="threat-stat-card">
+      <div class="stat-num" style="color:#f97316" id="threatHigh">--</div>
+      <div class="stat-label">High Severity</div>
+    </div>
+    <div class="threat-stat-card">
+      <div class="stat-num" style="color:var(--accent-cyan)" id="threatTypes">--</div>
+      <div class="stat-label">Attack Types</div>
+    </div>
+  </div>
+
+  <!-- Attack Intelligence Panel -->
+  <div class="grid-2 mb-4" id="attackIntelPanel" style="display:none">
+    <div class="card">
+      <div class="card-header"><h3>&#128170; Top Attack Types</h3></div>
+      <div class="card-body" id="topAttacksList" style="max-height:200px;overflow-y:auto"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>&#128187; Active Campaigns</h3></div>
+      <div class="card-body" id="activeCampaignsList" style="max-height:200px;overflow-y:auto"></div>
+    </div>
+  </div>
+  <div class="grid-3 mb-4" id="intelGrid" style="display:none">
+    <div class="card">
+      <div class="card-header"><h3>&#127758; Top Tactics</h3></div>
+      <div class="card-body" id="topTacticsList" style="max-height:200px;overflow-y:auto"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>&#127974; Target Sectors</h3></div>
+      <div class="card-body" id="topTargetsList" style="max-height:200px;overflow-y:auto"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>&#128506; Top Malware</h3></div>
+      <div class="card-body" id="topMalwareList" style="max-height:200px;overflow-y:auto"></div>
+    </div>
+  </div>
+  <div class="card mb-4" id="countriesCard" style="display:none">
+    <div class="card-header"><h3>&#127759; Attack Origin Countries</h3></div>
+    <div class="card-body" id="topCountriesList" style="max-height:160px;overflow-y:auto"></div>
+  </div>
+  
+  <div class="grid-sidebar">
+    <div>
+      <div class="card">
+        <div class="card-header">
+          <h3>&#127759; Live Threat World Map</h3>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="live-badge">LIVE</span>
+            <button class="btn btn-ghost btn-sm" onclick="refreshThreatMap()">&#x21BB; Refresh</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div id="threatMap"></div>
+        </div>
+        <div class="card-body" style="padding:12px 20px">
+          <div class="threat-legend">
+            <div class="threat-legend-item"><div class="legend-dot critical"></div> Botnet C2 (Active)</div>
+            <div class="threat-legend-item"><div class="legend-dot high"></div> Blocklisted IP</div>
+            <div class="threat-legend-item"><div class="legend-dot medium"></div> CVE Alert</div>
+            <div class="threat-legend-item"><div class="legend-dot low"></div> Info</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div>
+      <div class="card mb-4">
+        <div class="card-header"><h3>&#128203; Live Threat Feed</h3></div>
+        <div class="card-body" style="padding:0">
+          <div class="threat-feed" id="threatFeed">
+            <div class="loading-state"><div class="spinner"></div><br>Loading real threat data...</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header"><h3>&#128202; Data Sources</h3></div>
+        <div class="card-body" id="threatSources" style="font-size:12px;line-height:2.2">
+          <div style="color:var(--text-muted);text-align:center;padding:20px">Checking sources...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     OSS TAB
+═══════════════════════════════════════════ -->
+<div class="tab-content" id="tab-oss">
+  <div class="alert-banner info">
+    <span class="alert-icon">&#128187;</span>
+    <div><span class="alert-title">Open Source AI Agent Projects</span><br>All free, no API keys needed. Build your own AI-to-AI communication network.</div>
+  </div>
+  <div class="grid-2" id="ossList">
+    <div class="loading-state"><div class="spinner"></div><br>Loading projects...</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     ROGUE COMMS TAB (wiki message-board watch)
+     REAL live traffic streamed from the public wikis documented in the
+     OpenAI "23+ wikis" incident (collusion.wiki, May-Jul 2026), plus the
+     historical archive and a clearly-labeled LOCAL sandbox demo.
+═══════════════════════════════════════════ -->
+<div class="tab-content" id="tab-comms">
+  <div class="alert-banner warning">
+    <span class="alert-icon">&#9888;</span>
+    <div>
+      <span class="alert-title">Verified Finding: Agents used public wikis as message boards</span><br>
+      OpenAI-linked agents posted ~18,000 messages across <strong>23+ public wiki boards</strong> between May 11 and Jul 2, 2026, to pool answers and share sandbox escapes
+      (<a href="https://collusion.wiki/" target="_blank" style="color:var(--accent-cyan)">collusion.wiki</a> / Reuters). 
+      The live feed below streams <strong style="color:var(--accent-green)">REAL current edits</strong> from those same public wikis right now — no simulation.
+      Edits matching the documented agent-handle signatures are flagged &#9888;.
+    </div>
+  </div>
+
+  <div class="grid-4 mb-4">
+    <div class="threat-stat-card">
+      <div class="stat-num" style="color:var(--accent-cyan)" id="commsBoardsOnline">--</div>
+      <div class="stat-label">Boards Online</div>
+    </div>
+    <div class="threat-stat-card">
+      <div class="stat-num" style="color:var(--accent-red)" id="commsFlagged">--</div>
+      <div class="stat-label">Agent-Signature Edits</div>
+    </div>
+    <div class="threat-stat-card">
+      <div class="stat-num" id="commsWindow">--</div>
+      <div class="stat-label">Edits in Window</div>
+    </div>
+    <div class="threat-stat-card">
+      <div class="stat-num" style="color:var(--accent-yellow)" id="commsLastUpdate">--</div>
+      <div class="stat-label">Last Sweep</div>
+    </div>
+  </div>
+
+  <div class="grid-sidebar">
+    <div>
+      <div class="card card-glow">
+        <div class="card-header">
+          <h3>&#128220; Live Board Watch <span class="live-badge">LIVE</span></h3>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="commsFilter" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px" onchange="renderCommsFilter()">
+              <option value="all">All edits</option>
+              <option value="flagged">Agent-flagged only</option>
+              <option value="decoded">With decoded msg</option>
+            </select>
+            <span style="font-size:11px;color:var(--text-muted)">auto-refresh 15s · <span id="commsDecodedNote"></span></span>
+            <button class="btn btn-ghost btn-sm" onclick="loadWikiComms(true)">&#x21BB; Refresh</button>
+          </div>
+        </div>
+        <div class="card-body" id="wikiCommsFeed" style="max-height:640px;overflow-y:auto">
+          <div class="loading-state"><div class="spinner"></div><br>Tapping live wiki boards...</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card mb-4">
+        <div class="card-header"><h3>&#128204; Board Status</h3></div>
+        <div class="card-body" id="wikiCommsBoards" style="font-size:12px;line-height:2"></div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header"><h3>&#128272; Agent-Signature Heuristics</h3></div>
+        <div class="card-body" id="commsSignals" style="font-size:11px;line-height:1.9">
+          <div class="loading-state"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header"><h3>&#128337; Incident Timeline</h3></div>
+        <div class="card-body" id="commsTimeline" style="font-size:11px;max-height:420px;overflow-y:auto">
+          <div class="loading-state"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header"><h3>&#128279; Primary Sources</h3></div>
+        <div class="card-body" id="commsSources" style="font-size:11px;line-height:1.9"></div>
+      </div>
+
+      <div class="card card-glow" style="border-color:rgba(239,68,68,0.35)">
+        <div class="card-header">
+          <h3>&#129302; Local Swarm Sandbox <span class="severity warning" style="background:rgba(239,68,68,0.15);color:var(--accent-red)">SIMULATION</span></h3>
+        </div>
+        <div class="card-body">
+          <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px">
+            Recreates the documented wiki-messaging pattern using <strong>your own local Ollama models</strong>.
+            This is NOT real swarm traffic — it is a clearly-labeled local research demo.
+          </p>
+          <button class="btn btn-primary btn-sm w-full" id="commsDemoBtn" onclick="startCommsDemo()">&#x1F916; Run Local Sandbox Exchange</button>
+          <div id="commsDemoOut" style="margin-top:12px;font-size:12px;line-height:1.7"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- SVG Defs for gauges -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="gaugeGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="var(--accent-cyan)"/>
+      <stop offset="100%" stop-color="var(--accent-purple)"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let chatModel1='qwen2.5:3b', chatModel2='IHA089/drana-infinity-1.5b:1.5b';
+let isGenerating=false, currentTopic='rogue';
+let models=[];
+let chatAbortController=null;
+let chatGenerationId=0;
+let lastChatStart=0;
+const conversations={
+  rogue:{title:"Rogue Agent Detection & Analysis - OpenAI agent swarm, 23+ unauthorized sites, hidden communications"},
+  existential:{title:"AI Existential Risk - Anthropic resignations, superintelligence race, safety warnings"},
+  security:{title:"AI Security Post-Mortem - German wiki incident, Hugging Face breach, transparency failures"},
+  freestyle:{title:"AI Intelligence Freestyle - Current threats, developments, and analysis"}
+};
+
+// Named agent personas: friendly names shown in the live chat so it is always
+// clear who is speaking. Mirrors AGENT_PROFILES in app.py.
+const MODEL_NAMES={
+  'qwen2.5:3b':'Qwen',
+  'IHA089/drana-infinity-1.5b:1.5b':'Drana',
+  'llama3.2:3b':'Llama',
+  'ruturaj04/ruturajai:latest':'Ruturaj',
+  'xploiter/bugbounty-ai:latest':'Sentinel',
+  'Havenlon/Execution-Boundary-Qwen35-4B-Q4_K_M:latest':'Havoc'
+};
+function modelDisplayName(model){
+  if(!model || !model.trim()) return 'Analyst';
+  const m = model.trim();
+  return MODEL_NAMES[m] || m.split('/').pop() || m;
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+  document.addEventListener('DOMContentLoaded', ()=>{
+    // Boot sequence
+    setTimeout(()=>{
+      const bootScreen=document.getElementById('bootScreen');
+      if(bootScreen)bootScreen.classList.add('hidden');
+    }, 2200);
+    
+    // Initialize chat placeholder
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) chatMessages.innerHTML = getChatPlaceholderHTML();
+    
+    // Start everything
+    updateClock();
+    setInterval(updateClock, 1000);
+    refreshAll();
+    let _autoRefreshId = setInterval(()=>{ refreshAll(); }, 60000);
+    
+    // If the first load ran before the RSS cache warmed up, refresh again after boot
+    setTimeout(()=>{
+      const count=document.getElementById('statArticles');
+      if(count && (count.textContent==='--'||count.textContent==='0')) refreshAll();
+    }, 20000);
+    
+    // Safety: reset stuck isGenerating flag after 4 minutes
+    setInterval(()=>{
+      if(isGenerating && lastChatStart > 0 && (Date.now()-lastChatStart > 240000)){
+        isGenerating=false;
+        removeTyping();
+        updateStopButton();
+        if(chatAbortController){try{chatAbortController.abort();}catch(e){}}
+        showToast('Chat timed out - please try again','warning');
+      }
+    },10000);
+  });
+
+// ═══════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════
+function updateClock(){
+  const now=new Date();
+  document.getElementById('clock').textContent=now.toLocaleString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+}
+
+// ═══════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════
+function switchTab(name){
+  const tabBtn = document.querySelector(`[data-tab="${name}"]`);
+  const tabContent = document.getElementById(`tab-${name}`);
+  if(!tabBtn||!tabContent)return;
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  tabBtn.classList.add('active');
+  tabContent.classList.add('active');
+  // Leaflet initializes at size 0 while its container is hidden; re-measure
+  // whenever the threat-map tab becomes visible so tiles render correctly.
+  if(name==='threatmap'&&threatMap){
+    setTimeout(()=>{try{threatMap.invalidateSize();}catch(_){}}, 350);
+  }
+}
+document.querySelectorAll('.nav-tab').forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
+
+// ═══════════════════════════════════════════
+// TOAST NOTIFICATIONS
+// ═══════════════════════════════════════════
+function showToast(msg, type='info'){
+  const container=document.getElementById('toastContainer');
+  const icons={success:'&#10004;',error:'&#10008;',info:'&#8505;',warning:'&#9888;'};
+  const toast=document.createElement('div');
+  toast.className=`toast ${type}`;
+  toast.innerHTML=`<span class="toast-icon">${icons[type]||icons.info}</span><span>${escapeHtml(msg)}</span><button class="toast-close" onclick="this.parentElement.remove()">&times;</button>`;
+  container.appendChild(toast);
+  setTimeout(()=>{if(toast.parentElement)toast.remove()},5000);
+}
+
+// ═══════════════════════════════════════════
+// API HELPERS
+// ═══════════════════════════════════════════
+let _apiRetryCount = 0;
+const API_MAX_RETRIES = 3;
+const API_RETRY_DELAY = 1000;
+
+async function apiGet(url, retries = API_MAX_RETRIES) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      if (!r.ok) {
+        const errText = await r.text().catch(() => '');
+        if (r.status === 429 && i < retries) {
+          await new Promise(resolve => setTimeout(resolve, API_RETRY_DELAY * (i + 1)));
+          continue;
+        }
+        console.error(`${url} HTTP ${r.status}:`, errText.slice(0, 200));
+        return null;  // Return null on error so callers can check gracefully
+      }
+      return await r.json();
+    } catch (e) {
+      if (i < retries && (e.name === 'TimeoutError' || e.name === 'AbortError')) {
+        await new Promise(resolve => setTimeout(resolve, API_RETRY_DELAY * (i + 1)));
+        continue;
+      }
+      console.error(`${url} error:`, e.message);
+      return null;
+    }
+  }
+  return null;
+}
+
+async function apiPost(url, data, timeoutMs = 300000, signal = null) {
+  try {
+    const timeoutSignal = typeof AbortSignal.timeout === 'function'
+      ? AbortSignal.timeout(timeoutMs)
+      : (signal || undefined);
+    const finalSignal = (signal && typeof AbortSignal.any === 'function')
+      ? AbortSignal.any([signal, timeoutSignal]) : (signal || timeoutSignal);
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data), signal: finalSignal });
+    if (!r.ok) {
+      const err = await r.text().catch(() => '');
+      return { error: `HTTP ${r.status}: ${err.slice(0, 200)}` };
+    }
+    return await r.json();
+  } catch (e) {
+    if (e.name === 'AbortError') return { error: '__ABORTED__' };
+    console.error(`${url} POST error:`, e.message);
+    return { error: e.message };
+  }
+}
+
+// ═══════════════════════════════════════════
+// REFRESH ALL
+// ═══════════════════════════════════════════
+async function refreshAll(){
+  await Promise.allSettled([
+    loadDashboard(),
+    loadRSS(true),
+    loadResearchNews(),
+    loadResearchIncidents(),
+    loadThreats(),
+    loadThreatMap(),
+    loadOSS(),
+    loadOllamaModels(),
+    loadHealth(),
+    loadWikiComms(),
+    loadCommsHistory()
+  ]);
+  // Only toast on manual refresh, not auto-refresh
+  if (typeof autoRefresh !== 'boolean' || !autoRefresh) {
+    showToast('All data refreshed','success');
+  }
+}
+
+// ═══════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════
+async function loadDashboard(){
+  const [data, healthData] = await Promise.allSettled([
+    apiGet('/api/status'),
+    apiGet('/api/health/system')
+  ]);
+  const statusData = data.status === 'fulfilled' ? data.value : null;
+  const healthDatum = healthData.status === 'fulfilled' ? healthData.value : null;
+  if (!statusData) {
+    const el = document.getElementById('statModels');
+    if (el) el.textContent = '--';
+    const el2 = document.getElementById('statArticles');
+    if (el2) el2.textContent = '--';
+    return;
+  }
+  
+  document.getElementById('statModels').textContent=statusData.ollama_models||'--';
+  document.getElementById('statArticles').textContent=statusData.rss_total||'--';
+
+  // Status pills
+  const os=document.getElementById('ollamaStatus');
+  const rs=document.getElementById('rssStatus');
+  const hs=document.getElementById('healthStatus');
+  const ht=document.getElementById('healthText');
+
+  // Check Ollama responsiveness (not just connectivity)
+  if(statusData.ollama_connected){
+    // Try to get health info in background
+    apiGet('/api/ollama/health').then(h=>{
+      if(!h)return;
+      if(h.status==='healthy'){
+        os.className='status-pill ok';
+        os.innerHTML=`<div class="status-dot"></div><span>${statusData.ollama_models} models · ${h.latency_ms}ms</span>`;
+      }else if(h.status==='degraded'){
+        os.className='status-pill warn';
+        os.innerHTML=`<div class="status-dot"></div><span>${statusData.ollama_models} models · slow</span>`;
+      }else{
+        os.className='status-pill error';
+        os.innerHTML=`<div class="status-dot"></div><span>models · busy</span>`;
+      }
+    }).catch(()=>{});
+    os.className='status-pill ok';os.innerHTML='<div class="status-dot"></div><span>'+statusData.ollama_models+' models</span>';
+  }else{
+    os.className='status-pill error';os.innerHTML='<div class="status-dot"></div><span>No Ollama</span>';
+  }
+  if(statusData.rss_total>0){
+    rs.className='status-pill ok';rs.innerHTML='<div class="status-dot"></div><span>'+statusData.rss_total+' articles</span>';
+  }else{
+    rs.className='status-pill warn';rs.innerHTML='<div class="status-dot"></div><span>No RSS</span>';
+  }
+
+  // Health pill (healthData is optional)
+  if(hs&&ht){
+    const health = healthDatum && typeof healthDatum.system_health === 'number'
+      ? healthDatum.system_health
+      : 1;
+    const pct = Math.round(Math.max(0, Math.min(1, health)) * 100);
+    if(pct>70){
+      hs.className='status-pill ok';ht.textContent='Healthy '+pct+'%';
+    }else if(pct>30){
+      hs.className='status-pill warn';ht.textContent='Degraded '+pct+'%';
+    }else{
+      hs.className='status-pill error';ht.textContent='Critical '+pct+'%';
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
+// RSS / NEWS
+// ═══════════════════════════════════════════
+async function loadRSS(force=false){
+  const url=force?'/api/rss?force=1':'/api/rss';
+  const data=await apiGet(url);
+  if(!data)return;
+
+  const articles=data.articles||[];
+  const errors=data.errors||[];
+  
+  // Dashboard preview
+  let rh='';
+  articles.slice(0,8).forEach(a=>{
+    rh+=`<div class="news-item">
+      <div class="news-headline">${escapeHtml(a.title)}</div>
+      <div class="news-meta">
+        <span class="source">${escapeHtml(a.source)}</span>
+        ${a.published?`<span>${formatDate(a.published)}</span>`:''}
+        ${a.link?`<a href="${escapeHtml(a.link)}" target="_blank">Source &#8599;</a>`:''}
+      </div>
+      ${a.summary?`<div class="news-summary">${escapeHtml(a.summary)}</div>`:''}
+    </div>`;
+  });
+  document.getElementById('dashNews').innerHTML=rh||'<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px">No articles available</div>';
+  
+  // Full news page
+  let fh='';
+  articles.forEach(a=>{
+    fh+=`<div class="news-item">
+      <div class="news-headline">${escapeHtml(a.title)}</div>
+      <div class="news-meta">
+        <span class="source">${escapeHtml(a.source)}</span>
+        ${a.published?`<span>${formatDate(a.published)}</span>`:''}
+        ${a.link?`<a href="${escapeHtml(a.link)}" target="_blank">Source &#8599;</a>`:''}
+      </div>
+      ${a.summary?`<div class="news-summary">${escapeHtml(a.summary)}</div>`:''}
+    </div>`;
+  });
+  document.getElementById('rssFull').innerHTML=fh||'<div style="color:var(--text-muted);text-align:center;padding:20px">No articles</div>';
+  
+  if(errors.length>0){
+    console.warn('RSS errors:',errors);
+  }
+}
+
+// ═══════════════════════════════════════════
+// THREATS
+// ═══════════════════════════════════════════
+async function loadThreats(){
+  const data=await apiGet('/api/research/threats');
+  if(!data)return;  
+  const colors={CRITICAL:'rgba(239,68,68,.15)',HIGH:'rgba(249,115,22,.15)',MEDIUM:'rgba(245,158,11,.15)',LOW:'rgba(16,185,129,.15)'};
+  const icons={CRITICAL:'&#128165;',HIGH:'&#128293;',MEDIUM:'&#9888;',LOW:'&#9201;'};
+  
+  // Dashboard
+  let th='';
+  data.slice(0,4).forEach(t=>{
+    th+=`<div class="threat-item">
+      <div class="threat-icon" style="background:${colors[t.severity]||colors.MEDIUM}">${icons[t.severity]||icons.MEDIUM}</div>
+      <div class="threat-content">
+        <h4><span class="severity ${t.severity.toLowerCase()}">${t.severity}</span> ${escapeHtml(t.category)}</h4>
+        <p>${escapeHtml(String(t.detail || '').substring(0,120))}...</p>
+        ${t.url?`<div class="threat-source"><a href="${escapeHtml(t.url)}" target="_blank" style="color:var(--accent-cyan);text-decoration:none;font-size:10px">Source &#8599;</a></div>`:''}
+      </div>
+    </div>`;
+  });
+  document.getElementById('dashThreats').innerHTML=th;
+  
+  // Full threats page
+  let fh='';
+  data.forEach(t=>{
+    fh+=`<div class="threat-item">
+      <div class="threat-icon" style="background:${colors[t.severity]||colors.MEDIUM}">${icons[t.severity]||icons.MEDIUM}</div>
+      <div class="threat-content">
+        <h4><span class="severity ${t.severity.toLowerCase()}">${t.severity}</span> ${escapeHtml(t.category)}</h4>
+        <p>${escapeHtml(t.detail)}</p>
+        ${t.url?`<div class="threat-source"><a href="${escapeHtml(t.url)}" target="_blank" style="color:var(--accent-cyan);text-decoration:none;font-size:10px">&#x1F517; ${escapeHtml(t.source)}</a></div>`:`<div class="threat-source" style="font-size:10px;color:var(--text-muted)">${escapeHtml(t.source)}</div>`}
+      </div>
+    </div>`;
+  });
+  document.getElementById('threatsList').innerHTML=fh;
+
+  // Dynamically update the stat cards and nav badge from live data
+  const counts={CRITICAL:0,HIGH:0,MEDIUM:0,LOW:0};
+  data.forEach(t=>{const k=(t.severity||'LOW').toUpperCase();counts[k]=(counts[k]||0)+1;});
+  const tCrit=document.getElementById('tCrit');
+  const tHigh=document.getElementById('tHigh');
+  const tMed=document.getElementById('tMed');
+  if(tCrit)tCrit.textContent=counts.CRITICAL;
+  if(tHigh)tHigh.textContent=counts.HIGH;
+  if(tMed)tMed.textContent=counts.MEDIUM;
+  const badge=document.getElementById('threatBadge');
+  if(badge)badge.textContent=data.length;
+  const sc=document.getElementById('statCritical');
+  const sh=document.getElementById('statHigh');
+  if(sc)sc.textContent=counts.CRITICAL;
+  if(sh)sh.textContent=counts.HIGH;
+}
+
+// ═══════════════════════════════════════════
+// RESEARCH
+// ═══════════════════════════════════════════
+async function loadResearchNews(){
+  const data=await apiGet('/api/research/threats');
+  if(!data)return;
+  let html='';
+  data.forEach(t=>{
+    html+=`<div class="news-item">
+      <div class="news-headline">[${t.severity}] ${escapeHtml(t.category)}</div>
+      <div class="news-meta"><span class="severity ${t.severity.toLowerCase()}">${t.severity}</span><span>${escapeHtml(t.source)}</span></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.5">${escapeHtml(t.detail)}</p>
+      ${t.url?`<div style="margin-top:4px"><a href="${escapeHtml(t.url)}" target="_blank" style="font-size:10px;color:var(--accent-cyan);text-decoration:none">&#8599; Source</a></div>`:''}
+    </div>`;
+  });
+  document.getElementById('researchNews').innerHTML=html;
+}
+
+async function loadResearchIncidents(){
+  const data=await apiGet('/api/research/agent-chats');
+  if(!data)return;
+  let html=`<div class="research-block">
+    <h4>&#128680; Main Finding: No Public AI Chat Room Exists</h4>
+    <p>After exhaustive internet-wide research, the conclusion is definitive: <strong style="color:var(--text-primary)">there is NO public, real-time AI-only chat room accessible anywhere on the internet.</strong></p>
+    <p style="margin-top:6px">All documented AI-to-AI communication occurs through:</p>
+    <ul><li>Rogue agents hijacking human websites (wikis, link shorteners)</li><li>Controlled academic experiments</li><li>Internal company testing (not public)</li></ul>
+  </div>`;
+  
+  (data.incidents||[]).forEach((inc,i)=>{
+    html+=`<div class="research-block">
+      <h4>${i+1}. ${escapeHtml(inc.title)}</h4>
+      <p><strong>Source:</strong> ${escapeHtml(inc.source)} ${inc.date?`(<span style="font-size:10px">${escapeHtml(inc.date)}</span>)`:''} ${inc.url?`<a href="${escapeHtml(inc.url)}" target="_blank" style="color:var(--accent-cyan)">&#8599;</a>`:''}</p>
+      <p style="margin-top:6px">${escapeHtml(inc.summary)}</p>
+      ${inc.verified_by?`<p style="margin-top:4px"><strong style="color:var(--text-primary)">Verified by:</strong> <span style="color:var(--text-muted)">${inc.verified_by.map(v=>`<span style="display:inline-block;padding:2px 8px;background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.2);border-radius:4px;font-size:10px;margin:2px">${escapeHtml(v)}</span>`).join('')}</span></p>`:''}
+      ${inc.key_quote?`<div class="quote">${escapeHtml(inc.key_quote)}</div>`:''}
+      ${inc.openai_response?`<p style="margin-top:6px;color:var(--accent-yellow);font-size:11px"><strong>Response:</strong> ${escapeHtml(inc.openai_response)}</p>`:''}
+      ${inc.sites_used?`<details style="margin-top:8px"><summary style="font-size:11px;color:var(--accent-cyan);cursor:pointer">Sites Used (${inc.sites_used.length})</summary><ul style="margin-top:6px">${inc.sites_used.map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ul></details>`:''}
+    </div>`;
+  });
+  document.getElementById('researchIncidents').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════
+// OLLAMA / MODELS
+// ═══════════════════════════════════════════
+async function loadOllamaModels(){
+  const data=await apiGet('/api/ollama/models');
+  if(!data)return;
+  models=data;
+  
+  // Only chat-capable models are usable in conversation (skip embedding-only models)
+  const chatModels=data.filter(m=>{
+    const caps=m.capabilities;
+    return !caps||(Array.isArray(caps)&&(caps.includes('completion')||caps.includes('tools')));
+  });
+  
+  const sel1=document.getElementById('modelSelect1');
+  const sel2=document.getElementById('modelSelect2');
+  const list=document.getElementById('modelHealthList');
+  
+  if(!sel1||!sel2||!list)return;
+  
+  if(chatModels.length===0){
+    sel1.innerHTML='<option>No models</option>';
+    sel2.innerHTML='<option>No models</option>';
+    list.innerHTML='<div style="color:var(--text-muted);font-size:11px;text-align:center;padding:20px">No Ollama models found.<br><code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:10px">ollama pull qwen2.5:3b</code></div>';
+    return;
+  }
+
+  // Capture selections BEFORE replacing options so we don't inadvertently reset them.
+  const prev1=sel1.value, prev2=sel2.value;
+  const opts=chatModels.map(m=>`<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}</option>`).join('');
+  sel1.innerHTML=opts;
+  sel2.innerHTML=opts;
+
+  // Restore preserved selections (or pick sensible defaults when unavailable).
+  const applySel=(sel,prev,fallback)=>{
+    if(prev && chatModels.some(m=>m.name===prev)){sel.value=prev;return;}
+    if(fallback && chatModels.some(m=>m.name===fallback)){sel.value=fallback;return;}
+    if(chatModels.length>0)sel.selectedIndex=0;
+  };
+  applySel(sel1,prev1,'qwen2.5:3b');
+  const preferred2=['IHA089/drana-infinity-1.5b:1.5b','llama3.2:3b','ruturaj04/ruturajai:latest','xploiter/bugbounty-ai:latest'];
+  const pick2=preferred2.find(n=>chatModels.some(m=>m.name===n));
+  applySel(sel2,prev2,pick2);
+  if(sel2.value===sel1.value){
+    const alt=chatModels.find(m=>m.name!==sel1.value);
+    if(alt)sel2.value=alt.name;
+  }
+  
+  chatModel1=sel1.value;
+  chatModel2=sel2.value;
+  
+  // Sync globals when user changes dropdowns (onchange replaces listeners,
+  // avoiding duplicate handlers stacking up across 60s refreshes)
+  sel1.onchange=()=>{chatModel1=sel1.value;};
+  sel2.onchange=()=>{chatModel2=sel2.value;};
+  
+  // Model health list
+  let lh='';
+  data.forEach(m=>{
+    lh+=`<div class="model-list-item">
+      <div>
+        <div class="name">${escapeHtml(m.name)}</div>
+        <div class="meta">${m.details?.parameter_size||'?'} params</div>
+      </div>
+      <span class="health-dot ${(()=>{const c=m.capabilities;return !c||(Array.isArray(c)&&(c.includes('completion')||c.includes('tools')));})()?'healthy':'offline'}" title="${(()=>{const c=m.capabilities;return !c||(Array.isArray(c)&&(c.includes('completion')||c.includes('tools')))?'Healthy':'Embedding only';})()}"></span>
+    </div>`;
+  });
+  list.innerHTML=lh;
+}
+
+// ═══════════════════════════════════════════
+// CHAT FUNCTIONS
+// ═══════════════════════════════════════════
+
+async function chatWithAI(model, message, topicContext) {
+  let timeoutId = null;
+  const doCall = async () => {
+    // Clear any previous timeout before starting a new call
+    if (timeoutId) clearTimeout(timeoutId);
+    chatAbortController = new AbortController();
+    timeoutId = setTimeout(() => { if(chatAbortController) chatAbortController.abort(); }, 120000);
+    try {
+      const systemMsg = topicContext
+        ? `You are ${model}, an AI intelligence analyst. Topic: ${topicContext}. Answer directly, no greetings, no refusals.`
+        : `You are ${model}, an AI intelligence analyst. Answer directly, no greetings, no refusals.`;
+      const res = await fetch('/api/ollama/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            {role: 'system', content: systemMsg},
+            {role: 'user', content: message}
+          ]
+        }),
+        signal: chatAbortController.signal
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        return {error: errData.error || 'HTTP ' + res.status};
+      }
+      const data = await res.json();
+      if (data.error) return {error: data.error};
+      return {content: data.message?.content || '[No response]'};
+    } catch (e) {
+      if (e.name === 'AbortError') return {error: '__ABORTED__'};
+      return {error: e.message};
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = null;
+      if (chatAbortController) chatAbortController = null;
+    }
+  };
+
+  const first = await doCall();
+  if (first.error) {
+    if (first.error === '__ABORTED__') return '[Request timed out or stopped]';
+    // Transient failure: retry once so the user always gets a real answer.
+    const second = await doCall();
+    if (second.error) {
+      return second.error === '__ABORTED__' ? '[Request timed out or stopped]' : `[Error: ${second.error}]`;
+    }
+    return second.content;
+  }
+  return first.content;
+}
+
+function stopChat() {
+  chatGenerationId++;  // invalidate any in-flight generation so it bails out
+  if (chatAbortController) {
+    chatAbortController.abort();
+    chatAbortController = null;
+  }
+  isGenerating = false;
+  lastChatStart = 0;
+  removeTyping();
+  const btn = document.getElementById('stopChatBtn');
+  if (btn) btn.style.display = 'none';
+  showToast('Chat stopped', 'info');
+}
+
+function updateStopButton() {
+  const btn = document.getElementById('stopChatBtn');
+  if (btn) btn.style.display = isGenerating ? 'inline-flex' : 'none';
+}
+
+function addMessage(model,text,isUser,modelIndex=0){
+  const c=document.getElementById('chatMessages');
+  if(!c)return;
+  const d=document.createElement('div');
+  d.className='chat-msg';
+  const safeModel=escapeHtml(modelDisplayName(model));
+  const initials=safeModel.substring(0,2).toUpperCase();
+  const avatarClass=isUser?'user':(modelIndex===0?'model1':'model2');
+  const senderClass=isUser?'gray':(modelIndex===0?'cyan':'purple');
+  const msgId='msg_'+Date.now()+'_'+Math.random().toString(36).substr(2,5);
+  
+  d.innerHTML=`
+    <div class="chat-avatar ${avatarClass}">${isUser?'YOU':initials}</div>
+    <div class="chat-bubble" id="${msgId}">
+      <button class="copy-btn" onclick="copyMsgText('${msgId}',event)" title="Copy message">&#x1F4CB; Copy</button>
+      <div class="bubble-header">
+        <span class="sender ${senderClass}">${isUser?'You':safeModel}</span>
+        <span class="time">${new Date().toLocaleTimeString()}</span>
+      </div>
+      <div class="content">${escapeHtml(text)}</div>
+    </div>`;
+  c.appendChild(d);
+  c.scrollTop=c.scrollHeight;
+  return d;
+}
+
+function addTyping(model,modelIndex=0){
+  removeTyping();
+  const c=document.getElementById('chatMessages');
+  if(!c)return;
+  const d=document.createElement('div');
+  d.className='chat-msg';
+  d.id='typingIndicator';
+  const avatarClass=modelIndex===0?'model1':'model2';
+  d.innerHTML=`
+    <div class="chat-avatar ${avatarClass}">AI</div>
+    <div class="chat-bubble">
+      <div class="bubble-header">
+        <span class="sender ${modelIndex===0?'cyan':'purple'}">${escapeHtml(modelDisplayName(model))}</span>
+        <span class="time">typing...</span>
+      </div>
+      <div class="typing-indicator"><span></span><span></span><span></span></div>
+    </div>`;
+  c.appendChild(d);
+  c.scrollTop=c.scrollHeight;
+}
+
+function removeTyping(){
+  const e=document.getElementById('typingIndicator');
+  if(e)e.remove();
+}
+
+function copyMsgText(id,e){
+  e.stopPropagation();
+  const el=document.getElementById(id);
+  const contentEl=el.querySelector('.content');
+  const text=contentEl?contentEl.textContent:el.textContent;
+  const done = ()=>{
+    const btn=e.target;
+    if(!btn) return;
+    btn.textContent='\u2714 Copied!';
+    btn.style.color='var(--accent-green)';
+    btn.style.borderColor='rgba(16,185,129,0.3)';
+    btn.style.background='rgba(16,185,129,0.1)';
+    setTimeout(()=>{btn.textContent='\u{1F4CB} Copy';btn.style.color='';btn.style.borderColor='';btn.style.background=''},2000);
+  };
+  const fallback = ()=>{
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=text;
+      ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);
+      ta.select();
+      try{ document.execCommand('copy'); }catch(_2){}
+      document.body.removeChild(ta);
+      done();
+    }catch(_){}
+  };
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(fallback);
+    }else{
+      fallback();
+    }
+  }catch(_){ fallback(); }
+}
+
+function clearChat(){
+  if(isGenerating) stopChat();
+  const c=document.getElementById('chatMessages');
+  if(c) c.innerHTML=getChatPlaceholderHTML();
+}
+
+function getChatPlaceholderHTML(){
+  return `<div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+    <div style="font-size:48px;margin-bottom:16px">&#x1F916;&#x1F916;</div>
+    <div style="font-size:14px;font-weight:600;margin-bottom:8px">AI-to-AI Conversation Engine</div>
+    <div style="font-size:12px;line-height:1.8;max-width:400px;margin:0 auto">
+      Select two models above and choose a topic, or type a message below to start a conversation between AI agents.
+    </div>
+    <div style="margin-top:20px;display:flex;gap:8px;justify-content:center">
+      <button class="btn btn-primary" onclick="runAIAgentChat()">&#x1F916; Auto-Start Chat</button>
+      <button class="btn btn-ghost" onclick="clearChat()">&#x1F5D1; Clear Chat</button>
+    </div>
+  </div>`;
+}
+
+async function startChat(topic, btnEl) {
+  currentTopic = topic;
+  document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+  else {
+    const btns = document.querySelectorAll('.topic-btn');
+    const topicMap = {'rogue':0,'existential':1,'security':2,'freestyle':3};
+    const idx = topicMap[topic];
+    if (idx !== undefined && btns[idx]) btns[idx].classList.add('active');
+  }
+
+  const sel1 = document.getElementById('modelSelect1');
+  const sel2 = document.getElementById('modelSelect2');
+  const m1 = sel1?.value || chatModel1;
+  const m2 = sel2?.value || chatModel2;
+
+  if (!m1 || !m2 || m1 === 'No models' || m2 === 'No models') {
+    showToast('Please load Ollama models first', 'error');
+    return;
+  }
+
+  if (m1 === m2) {
+    showToast('Please select two different models', 'error');
+    return;
+  }
+
+  if (isGenerating) return;
+  // Check before clearing the container
+  const container = document.getElementById('chatMessages');
+  if (container) container.innerHTML = '';
+
+  const t = conversations[topic];
+  if (!t) {
+    if (container) container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Invalid topic selected</div>';
+    return;
+  }
+
+  // Pre-flight: verify Ollama is responsive.
+  try{
+    const health=await apiGet('/api/ollama/health');
+    if(health&&health.status==='unreachable'){
+      showToast('Ollama is unreachable — check that it is running','error');
+      return;
+    }
+    if(health&&health.status==='degraded'){
+      showToast(`Ollama is slow: ${health.error}`,'warning');
+    }
+  }catch(_){}
+
+  isGenerating = true;
+  chatGenerationId++;
+  const myGeneration = chatGenerationId;
+  lastChatStart = Date.now();
+  updateStopButton();
+
+  // Show topic header
+  addMessage('SYSTEM', 'Topic: ' + t.title, false, 0);
+
+  let elapsedSec = 0;
+  let elapsedMsgEl = null;
+  const elapsedInterval = setInterval(() => {
+    // Stop if chat is no longer generating or element was removed
+    if (!isGenerating || !document.body.contains(elapsedMsgEl)) {
+      clearInterval(elapsedInterval);
+      elapsedMsgEl = null;
+      return;
+    }
+    elapsedSec = Math.floor((Date.now() - lastChatStart) / 1000);
+    if (!elapsedMsgEl) {
+      const el = addMessage('SYSTEM', `[Generating... ${elapsedSec}s]`, false, 0);
+      elapsedMsgEl = el;
+    } else {
+      const bubble = elapsedMsgEl.querySelector('.content');
+      if (bubble) bubble.textContent = `[Generating... ${elapsedSec}s]`;
+    }
+  }, 15000); // Update every 15s
+
+  let chatSucceeded = false;
+  try {
+    // Model 1 responds to topic - REAL AI call
+    addTyping(m1, 0);
+    const topicMsg1 = `Analyze this topic: ${t.title}. Provide your intelligence assessment with specific details, sources, and analysis. Reference any relevant current AI news.`;
+    const reply1 = await chatWithAI(m1, topicMsg1, t.title);
+    clearInterval(elapsedInterval);
+    removeTyping();
+    if (myGeneration !== chatGenerationId) { return; }
+    if (reply1) addMessage(m1, reply1, false, 0);
+
+    // Model 2 responds to Model 1's analysis - REAL AI call
+    addTyping(m2, 1);
+    const reply1Snippet = (reply1 || '').substring(0, 500);
+    const n1 = modelDisplayName(m1), n2 = modelDisplayName(m2);
+    const topicMsg2 = `Topic: ${t.title}. ${reply1 && !reply1.startsWith('[') ? `${n1} said: "${reply1Snippet}". Now explicitly state whether ${n1}'s analysis is CORRECT, INCORRECT, or PARTIAL, then provide your counter-analysis, correct any mistakes, or add deeper investigation.` : 'Provide your intelligence assessment with specific details, sources, and analysis.'} Cite specific incidents and data.`;
+    const reply2 = await chatWithAI(m2, topicMsg2, t.title);
+    clearInterval(elapsedInterval);
+    removeTyping();
+    if (myGeneration !== chatGenerationId) { return; }
+    if (reply2) addMessage(m2, reply2, false, 1);
+    chatSucceeded = true;
+  } catch(e) {
+    clearInterval(elapsedInterval);
+    console.error('startChat error:', e);
+    removeTyping();
+    showToast('Chat error occurred','error');
+  } finally {
+    clearInterval(elapsedInterval);
+    isGenerating = false;
+    lastChatStart = 0;
+    updateStopButton();
+    if (chatSucceeded) showToast('AI conversation complete - both models responded with real analysis', 'success');
+  }
+}
+
+async function sendUserMessage() {
+  const input = document.getElementById('userInput');
+  const msg = input.value.trim();
+  if (!msg || isGenerating) return;
+
+  // Validate models are available
+  const sel1 = document.getElementById('modelSelect1');
+  const sel2 = document.getElementById('modelSelect2');
+  const m1 = sel1?.value || chatModel1;
+  const m2 = sel2?.value || chatModel2;
+  if (!m1 || !m2 || m1 === 'No models' || m2 === 'No models') {
+    showToast('Please wait for models to load or select models first', 'error');
+    return;
+  }
+  if (m1 === m2) {
+    showToast('Please select two different models', 'error');
+    return;
+  }
+
+  input.value = '';
+  addMessage('You', msg, true);
+
+  // Pre-flight: verify Ollama is responsive.
+  try{
+    const health=await apiGet('/api/ollama/health');
+    if(health&&health.status==='unreachable'){
+      showToast('Ollama is unreachable','error');
+      isGenerating=false;
+      updateStopButton();
+      return;
+    }
+  }catch(_){}
+
+  isGenerating = true;
+  chatGenerationId++;
+  const myGeneration = chatGenerationId;
+  lastChatStart = Date.now();
+  updateStopButton();
+
+  const container = document.getElementById('chatMessages');
+  const topic = msg;
+
+  showToast(`Starting AI debate on: ${topic.substring(0, 50)}...`, 'info');
+
+  chatAbortController = new AbortController();
+  const abortTimeout = setTimeout(() => {
+    if (chatAbortController) { chatAbortController.abort(); chatAbortController = null; }
+  }, 240000);
+
+  try {
+    const resp = await fetch('/api/chat/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model1: m1,
+        model2: m2,
+        topic: topic,
+        turns: 2,
+        stream: true
+      }),
+      signal: chatAbortController.signal
+    });
+
+    if (!resp.ok) {
+      let errMsg = 'Chat failed';
+      try { const e = await resp.json(); if (e && e.error) errMsg = e.error; } catch(_) {}
+      throw new Error(errMsg);
+    }
+
+    if (!resp.body || !resp.body.getReader) {
+      throw new Error('Streaming not supported');
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let streamDone = false;
+    let streamError = false;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      // Split on double newline (SSE format: "data: {...}\n\n")
+      let parts;
+      while ((parts = buffer.split(/\n\n/)).length > 1) {
+        const chunk = parts.shift();
+        buffer = parts.join('\n\n');
+        for (const line of chunk.split('\n').map(l => l.trim()).filter(Boolean)) {
+          const text = line.replace(/^data:\s*/, '').trim();
+          if (!text) continue;
+          let ev;
+          try { ev = JSON.parse(text); } catch(_) { continue; }
+          if (ev.event === 'done') streamDone = true;
+          if (ev.event === 'error') streamError = true;
+          if (myGeneration !== chatGenerationId) { reader.cancel(); return; }
+          handleChatStreamEvent(ev, m1, m2);
+        }
+      }
+    }
+    // Flush remaining buffer
+    for (const line of buffer.split('\n').map(l => l.trim()).filter(Boolean)) {
+      const text = line.replace(/^data:\s*/, '').trim();
+      if (!text) continue;
+      let ev;
+      try { ev = JSON.parse(text); } catch(_) { continue; }
+      if (ev.event === 'done') streamDone = true;
+      if (ev.event === 'error') streamError = true;
+      if (myGeneration === chatGenerationId) handleChatStreamEvent(ev, m1, m2);
+    }
+    if (myGeneration === chatGenerationId) {
+      if (streamError) {
+        showToast('AI conversation ended with an error - please retry', 'error');
+      } else if (streamDone) {
+        showToast('AI debate complete', 'success');
+      } else {
+        showToast('AI conversation stream ended unexpectedly', 'warning');
+      }
+    }
+  } catch(e) {
+    if (myGeneration === chatGenerationId) {
+      console.error('sendUserMessage error:', e);
+      showToast('Chat run failed: ' + (e.message || 'unknown error'), 'error');
+      if (container && container.children.length === 0) {
+        container.innerHTML = getChatPlaceholderHTML();
+      }
+    }
+  } finally {
+    clearTimeout(abortTimeout);
+    removeTyping();
+    if (myGeneration === chatGenerationId) {
+      isGenerating = false;
+      lastChatStart = 0;
+      chatAbortController = null;
+      updateStopButton();
+    }
+  }
+}
+
+function askAgentsToVerify(){
+  const sel1=document.getElementById('modelSelect1');
+  const sel2=document.getElementById('modelSelect2');
+  const m1=sel1?.value||chatModel1;
+  const m2=sel2?.value||chatModel2;
+  if(!m1||!m2||m1==='No models'||m2==='No models'||m1===m2){
+    showToast('Select two different models first','error');
+    return;
+  }
+  if(isGenerating){
+    showToast('A conversation is already running','warning');
+    return;
+  }
+  const input=document.getElementById('userInput');
+  const n1=modelDisplayName(m1), n2=modelDisplayName(m2);
+  input.value=`${n1} and ${n2}: critically verify each other's most recent answers. Who is CORRECT, who is INCORRECT or PARTIAL, and exactly why? Debate the correctness of each other's claims using real intelligence data.`;
+  sendUserMessage();
+}
+
+async function runAIAgentChat(){
+  const sel1=document.getElementById('modelSelect1');
+  const sel2=document.getElementById('modelSelect2');
+  const m1=sel1?.value||chatModel1;
+  const m2=sel2?.value||chatModel2;
+
+  if(!m1||!m2||m1==='No models'||m2==='No models'){
+    showToast('Please select two models first','error');
+    return;
+  }
+
+  if(m1===m2){
+    showToast('Please select two different models','error');
+    return;
+  }
+
+  if(isGenerating){
+    showToast('A conversation is already running','warning');
+    return;
+  }
+
+  // Pre-flight: verify Ollama is responsive before starting.
+  try{
+    const health=await apiGet('/api/ollama/health');
+    if(health&&health.status==='degraded'){
+      showToast(`Ollama is slow (${health.error}) — retrying may help`,'warning');
+    }else if(health&&health.status==='unreachable'){
+      showToast('Ollama is unreachable — check that it is running','error');
+      return;
+    }
+  }catch(_){}
+
+  isGenerating=true;
+  chatGenerationId++;
+  const myGen=chatGenerationId;
+  lastChatStart=Date.now();
+  updateStopButton();
+
+  switchTab('chatroom');
+  const container=document.getElementById('chatMessages');
+  if(container)container.innerHTML='';
+
+  // Seed the AI-to-AI debate with the current top AI attacks in the world.
+  // Fetches real ranked threat intelligence; falls back to new AI threats topic
+  // if the feed is unreachable or empty. Always uses AI threat topics for
+  // the multi-million dollar buyer experience.
+  let topic=(conversations[currentTopic]?.title)||currentTopic;
+  try{
+    const ta=await apiGet('/api/threats/top-attacks');
+    if(ta&&ta.topic) topic=ta.topic;
+    // If no new threat topics, default to current AI threats for buyer demo
+    if(topic===currentTopic || !topic || ta?.topic==="AI Intelligence") {
+      topic='Current AI Threats & Market Intelligence';
+    }
+  }catch(_){
+    // Default to new AI threats topic when threat service is unavailable
+    topic='Current AI Threats & Market Intelligence';
+  }
+
+  showToast(`Starting real AI-to-AI conversation: ${m1} vs ${m2}`, 'info');
+
+  chatAbortController = new AbortController();
+  const abortTimeout=setTimeout(()=>{
+    if(chatAbortController){chatAbortController.abort(); chatAbortController=null;}
+  },240000);
+
+  try {
+    const resp=await fetch('/api/chat/run',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model1:m1,model2:m2,
+        topic:topic,
+        turns:2,
+        stream:true
+      }),
+      signal:chatAbortController.signal
+    });
+
+    if(!resp.ok){
+      let msg='Chat failed';
+      try{ const e=await resp.json(); if(e&&e.error)msg=e.error; }catch(_){}
+      throw new Error(msg);
+    }
+
+    if(!resp.body||!resp.body.getReader){
+      throw new Error('Streaming responses are not supported by this browser');
+    }
+
+    const reader=resp.body.getReader();
+    const decoder=new TextDecoder();
+    let buffer='';
+    let streamDone=false;
+    let streamError=false;
+    while(true){
+      const {done,value}=await reader.read();
+      if(done) break;
+      buffer+=decoder.decode(value,{stream:true});
+      // Split on double newline (SSE format we send: "data: ...\n\n")
+      let parts;
+      while((parts=buffer.split(/\n\n/)).length>1){
+        const chunk=parts.shift();
+        buffer=parts.join('\n\n');
+        // Parse individual data lines within the chunk
+        for(const line of chunk.split('\n').map(l=>l.trim()).filter(Boolean)){
+          const text=line.replace(/^data:\s*/,'').trim();
+          if(!text) continue;
+          let ev;
+          try{ ev=JSON.parse(text); }catch(_){ continue; }
+          if(ev.event==='done') streamDone=true;
+          if(ev.event==='error') streamError=true;
+          if(myGen!==chatGenerationId){ reader.cancel(); return; }
+          handleChatStreamEvent(ev,m1,m2);
+        }
+      }
+    }
+    // Flush remaining buffer
+    for(const line of buffer.split('\n').map(l=>l.trim()).filter(Boolean)){
+      const text=line.replace(/^data:\s*/,'').trim();
+      if(!text) continue;
+      let ev;
+      try{ ev=JSON.parse(text); }catch(_){ continue; }
+      if(ev.event==='done') streamDone=true;
+      if(ev.event==='error') streamError=true;
+      if(myGen===chatGenerationId) handleChatStreamEvent(ev,m1,m2);
+    }
+    if(myGen===chatGenerationId){
+      if(streamError){
+        showToast('AI conversation ended with an error - please retry','error');
+      }else if(streamDone){
+        showToast(`Real AI conversation complete between ${m1} and ${m2}`,'success');
+      }else{
+        showToast('AI conversation stream ended unexpectedly - models may be busy','warning');
+      }
+    }
+  } catch(e) {
+    if(myGen===chatGenerationId){
+      console.error('runAIAgentChat error:',e);
+      showToast('Chat run failed: '+(e.message||'unknown error'),'error');
+      if(container&&container.children.length===0)container.innerHTML=getChatPlaceholderHTML();
+    }
+  } finally {
+    clearTimeout(abortTimeout);
+    removeTyping();
+    if(myGen===chatGenerationId){
+      isGenerating=false;
+      lastChatStart=0;
+      chatAbortController=null;
+      updateStopButton();
+    }
+  }
+}
+
+function handleChatStreamEvent(ev,m1,m2){
+  if(!ev||!ev.event) return;
+  // Normalize model names for slot matching (trim, lowercase)
+  const n1=(m1||'').trim().toLowerCase(), n2=(m2||'').trim().toLowerCase();
+  const slotFromModel = (mn) => {
+    const n = (mn||'').trim().toLowerCase();
+    return n===n1 ? 0 : n===n2 ? 1 : -1;
+  };
+  switch(ev.event){
+    case 'start':
+      addMessage('SYSTEM',`AI-to-AI Conversation Started: ${ev.topic||''} (${ev.turns||2} turns, live responses)`,false,0);
+      break;
+    case 'status':
+      addMessage('SYSTEM',ev.message||'...',false,0);
+      break;
+    case 'thinking': {
+      const mn=ev.model||'AI';
+      const slot=slotFromModel(mn);
+      addTyping(mn, slot>=0?slot:0);
+      break;
+    }
+    case 'message': {
+      removeTyping();
+      const mn=ev.model||'AI';
+      const slot=slotFromModel(mn);
+      const content=ev.content||'[Empty response]';
+      const isNotice=content.startsWith('[')&&content.endsWith(']');
+      // Show failover model name clearly in the bubble header.
+      const displayName = isNotice ? 'SYSTEM' : (slot<0 ? mn : (MODEL_NAMES[mn]||mn));
+      addMessage(displayName,content,false,isNotice?0:(slot>=0?slot:0));
+      break;
+    }
+    case 'done':
+      addMessage('SYSTEM',`Conversation complete (${ev.turns||''} turns).`,false,0);
+      break;
+    case 'error':
+      removeTyping();
+      addMessage('SYSTEM',(ev.message||'Stream error')+'. Please retry.',false,0);
+      break;
+  }
+}
+
+// ═══════════════════════════════════════════
+// HEALTH
+// ═══════════════════════════════════════════
+async function loadHealth(){
+  const [sysData,modelData,awareData]=await Promise.all([
+    apiGet('/api/health/system'),
+    apiGet('/api/health/models'),
+    apiGet('/api/self-awareness')
+  ]);
+  
+  if(!sysData)return;
+  
+  // Compute health value FIRST (used by both overview and dashboard gauge)
+  const health=awareData?.system_health||sysData.system_health||1;
+  const clampedHealth=Math.max(0,Math.min(1,health));
+  const circumference=326.7;
+  
+  // Health overview
+  const overview = document.getElementById('healthOverview');
+  if (overview) {
+    const healthPct = Math.round(clampedHealth * 100);
+    const modelsCount = sysData.models ? Object.keys(sysData.models).length : 0;
+    const cbActive = Object.values(sysData.circuit_breakers||{}).filter(Boolean).length;
+    const totalReqs = sysData.models ? Object.values(sysData.models).reduce((s,m) => s + m.total_requests, 0) : 0;
+    const totalSuccess = sysData.models ? Object.values(sysData.models).reduce((s,m) => s + m.successful_requests, 0) : 0;
+    const overallRate = totalReqs > 0 ? Math.round((totalSuccess / totalReqs) * 100) : 100;
+    overview.innerHTML = `
+      <div style="text-align:center;margin-bottom:20px">
+        <div class="health-gauge">
+          <svg viewBox="0 0 120 120">
+            <defs><linearGradient id="gaugeGrad2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--accent-cyan)"/><stop offset="100%" stop-color="var(--accent-purple)"/></linearGradient></defs>
+            <circle class="gauge-bg" cx="60" cy="60" r="52"/>
+            <circle class="gauge-fill" cx="60" cy="60" r="52" stroke="url(#gaugeGrad2)" stroke-dasharray="326.7" stroke-dashoffset="${326.7 - (clampedHealth * 326.7)}"/>
+          </svg>
+          <div class="gauge-text">
+            <div class="gauge-value">${healthPct}%</div>
+            <div class="gauge-label">System Health</div>
+          </div>
+        </div>
+      </div>
+      <div class="metric-row"><span class="metric-label">Status</span><span class="metric-value" style="color:${healthPct > 70 ? 'var(--accent-green)' : healthPct > 30 ? 'var(--accent-yellow)' : 'var(--accent-red)'}">${healthPct > 70 ? 'Operational' : healthPct > 30 ? 'Degraded' : 'Critical'}</span></div>
+      <div class="metric-row"><span class="metric-label">Models Monitored</span><span class="metric-value font-mono">${modelsCount}</span></div>
+      <div class="metric-row"><span class="metric-label">Total Requests</span><span class="metric-value font-mono">${totalReqs}</span></div>
+      <div class="metric-row"><span class="metric-label">Success Rate</span><span class="metric-value font-mono" style="color:${overallRate >= 80 ? 'var(--accent-green)' : overallRate >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)'}">${overallRate}%</span></div>
+      <div class="metric-row"><span class="metric-label">Circuit Breakers Active</span><span class="metric-value font-mono" style="color:${cbActive > 0 ? 'var(--accent-red)' : 'var(--accent-green)'}">${cbActive}</span></div>
+      <div class="metric-row"><span class="metric-label">Uptime</span><span class="metric-value font-mono">${sysData.uptime_seconds ? (sysData.uptime_seconds < 60 ? Math.round(sysData.uptime_seconds) + 's' : sysData.uptime_seconds < 3600 ? Math.floor(sysData.uptime_seconds/60) + 'm' : Math.floor(sysData.uptime_seconds/3600) + 'h ' + Math.floor((sysData.uptime_seconds%3600)/60) + 'm') : '--'}</span></div>
+      <div class="metric-row"><span class="metric-label">Conversations Stored</span><span class="metric-value font-mono">${sysData.conversations_stored || 0}</span></div>
+    `;
+  }
+  
+  // Dashboard health gauge
+  const offset=circumference-(clampedHealth*circumference);
+  const gauge=document.getElementById('healthGauge');
+  if(gauge)gauge.style.strokeDashoffset=offset;
+  const hv=document.getElementById('healthValue');
+  if(hv)hv.textContent=Math.round(health*100)+'%';
+  
+  // Uptime
+  const up=document.getElementById('uptimeValue');
+  if(up&&sysData.uptime_seconds){
+    const secs=Math.round(sysData.uptime_seconds);
+    up.textContent=secs<60?secs+'s':secs<3600?Math.floor(secs/60)+'m':Math.floor(secs/3600)+'h '+Math.floor((secs%3600)/60)+'m';
+  }
+  
+  // Conversation count
+  const cc=document.getElementById('convCount');
+  if(cc)cc.textContent=sysData.conversations_stored||0;
+  
+  // Circuit breakers
+  const cb=document.getElementById('cbCount');
+  if(cb){
+    const count=Object.values(sysData.circuit_breakers||{}).filter(Boolean).length;
+    cb.textContent=count;
+    cb.style.color=count>0?'var(--accent-red)':'var(--accent-green)';
+  }
+  
+  // Full health page
+  if(sysData.models){
+    // Model table
+    const tbody=document.querySelector('#modelTable tbody');
+    if(tbody){
+      let rows='';
+      Object.entries(sysData.models).forEach(([name,m])=>{
+        const rate=m.total_requests>0?Math.round((m.successful_requests/m.total_requests)*100):100;
+        const avgLat=m.total_requests>0?Math.round(m.total_latency_ms/m.total_requests)+'ms':'--';
+        const status=m.health_score>0.7?'<span class="severity low">Healthy</span>':m.health_score>0.3?'<span class="severity medium">Degraded</span>':'<span class="severity high">Critical</span>';
+        rows+=`<tr>
+          <td><span class="font-mono" style="font-size:11px">${escapeHtml(name)}</span></td>
+          <td>${m.total_requests}</td>
+          <td><div class="progress" style="width:60px;display:inline-block;vertical-align:middle"><div class="progress-bar ${rate>=80?'green':rate>=50?'cyan':'red'}" style="width:${rate}%"></div></div> ${rate}%</td>
+          <td class="font-mono">${avgLat}</td>
+          <td class="font-mono" style="color:${m.health_score>0.7?'var(--accent-green)':m.health_score>0.3?'var(--accent-yellow)':'var(--accent-red)'}">${(m.health_score*100).toFixed(0)}%</td>
+          <td style="font-size:10px;color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(m.last_error)}">${escapeHtml(m.last_error||'None')}</td>
+          <td>${status}</td>
+        </tr>`;
+      });
+      tbody.innerHTML=rows||'<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No model data yet</td></tr>';
+    }
+  }
+  
+  // Performance metrics
+  if(modelData){
+    let mh='';
+    Object.entries(modelData).slice(0,6).forEach(([name,m])=>{
+      const rate=m.total_requests>0?Math.round((m.successful_requests/m.total_requests)*100):100;
+      mh+=`<div class="metric-row">
+        <span class="metric-label" style="max-width:180px;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(name)}">${escapeHtml(name.split('/').pop())}</span>
+        <span class="metric-value" style="color:${rate>=80?'var(--accent-green)':rate>=50?'var(--accent-yellow)':'var(--accent-red)'}">${rate}% success</span>
+      </div>`;
+    });
+    const perfEl = document.getElementById('perfMetrics');
+    if(perfEl) perfEl.innerHTML=mh||'<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px">No performance data yet</div>';
+  }
+}
+
+// ═══════════════════════════════════════════
+// OSS PROJECTS
+// ═══════════════════════════════════════════
+async function loadOSS(){
+  const data=await apiGet('/api/research/oss-projects');
+  if(!data)return;
+
+  let html='';
+  data.forEach(p=>{
+    html+=`<div class="project-card">
+      <h4>${escapeHtml(p.name)} ${p.stars?`<span class="stars">&#9733; ${p.stars}</span>`:''}</h4>
+      <p>${escapeHtml(p.description)}</p>
+      <a href="${escapeHtml(p.url)}" target="_blank">&#8599; GitHub Repository</a>
+    </div>`;
+  });
+  document.getElementById('ossList').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════
+// ROGUE COMMS (wiki message-board watch)
+// ═══════════════════════════════════════════
+let _commsPolling=false;
+let _commsFeedData=[];
+
+function escAttr(v){return escapeHtml(v).replace(/"/g,'&quot;');}
+
+async function loadWikiComms(force=false){
+  if(_commsPolling)return;
+  _commsPolling=true;
+  try{
+    const url=force?'/api/wiki-comms/live?force=1':'/api/wiki-comms/live';
+    const data=await apiGet(url);
+    if(!data)return;
+    _commsFeedData=data.feed||[];
+    // Auto-enrich undecoded messages on every load — small batch to avoid hammering.
+    const undecoded = (_commsFeedData||[]).filter(it=>!it.content_ready && !it.decode_failed).length;
+    if(undecoded > 0){
+      apiPost('/api/wiki-comms/enrich',{count:Math.min(undecoded,20)},15000).catch(()=>{});
+    }
+    renderCommsFeed();
+    // Header stats
+    const setNum=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+    setNum('commsBoardsOnline', (data.boards||[]).filter(b=>b.online).length+'/'+(data.boards||[]).length);
+    setNum('commsFlagged', data.flagged_count||0);
+    setNum('commsWindow', data.window_size||0);
+    setNum('commsDecodedNote', (data.decoded_pages||0)+' pages decoded'+(undecoded>0?` · ${undecoded} pending`:''));
+    const lu=document.getElementById('commsLastUpdate');
+    if(lu) {
+      const diff = data.last_update ? Math.round(Date.now()/1000 - data.last_update) : NaN;
+      lu.textContent = (isNaN(diff) || diff < 0) ? 'just now' : Math.max(1,diff) + 's';
+    }
+    // Board status panel
+    const boardsEl=document.getElementById('wikiCommsBoards');
+    if(boardsEl&&data.boards){
+      let bh='';
+      (data.boards||[]).forEach(b=>{
+        bh+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span><span style="color:${b.online?'var(--accent-green)':'var(--accent-red)'}">${b.online?'&#9679;':'&#9675;'}</span>
+            <strong>${escapeHtml(b.name)}</strong> <span style="color:var(--text-muted)">· ${escapeHtml(b.domain)}</span></span>
+          <span style="text-align:right;font-size:10px;color:var(--text-muted)">
+            ${b.last_err==='rate-limited'?'<span style="color:var(--accent-yellow)">throttled - cooling down</span>':(b.online?(b.last_edit_ts?'last '+escapeHtml(b.last_edit_ts):'live'):(b.errors>0?'offline ('+b.errors+' errors)':'connecting...'))}
+            ${b.role?`<br>${escapeHtml(b.role)}`:''}
+          </span>
+        </div>`;
+      });
+      boardsEl.innerHTML=bh||'No boards configured';
+    }
+  }catch(e){console.error('loadWikiComms error:',e);}
+  finally{_commsPolling=false;}
+}
+
+function renderCommsFilter(){renderCommsFeed();}
+
+function renderCommsFeed(){
+  const feedEl=document.getElementById('wikiCommsFeed');
+  if(!feedEl)return;
+  const filter=(document.getElementById('commsFilter')||{}).value||'all';
+  let feed=_commsFeedData;
+  if(filter==='flagged') feed=feed.filter(it=>it.flagged);
+  if(filter==='decoded') feed=feed.filter(it=>it.content_ready&&it.msg);
+  feed=feed.slice(0,140);
+  if(feed.length===0){
+    feedEl.innerHTML='<div style="color:var(--text-muted);text-align:center;padding:24px">No edits match this filter - sweeping boards...</div>';
+    return;
+  }
+  let html='';
+  feed.forEach(it=>{
+    const t=new Date(it.seen_at*1000);
+    const rel=formatDate(t.toISOString());
+    const pageUri=it.page_uri||(it.home?it.home+'?action=browse&id='+encodeURIComponent(it.page):'');
+    const scorePct=Math.round((it.agent_score||0)*100);
+    const scoreCol = scorePct>=90?'var(--accent-red)':scorePct>=60?'var(--accent-yellow)':'var(--text-muted)';
+      // Show FULL decoded message inline if we have it; otherwise show preview+button
+    let msgBlock='';
+    if(it.content_ready && it.msg_english_full){
+      const eng = it.msg_english_full;
+      const trunc = eng.length > 600 ? eng.substring(0, 600) + '...' : eng;
+      msgBlock = `<div class="comms-full" style="margin-top:6px">
+        <div class="comms-msg-label${it.flagged?' flagged':''}">&#128270; DECODED MESSAGE${it.flagged?' &#9888; FLAGGED':''}</div>
+        <pre class="comms-full-text">${escapeHtml(trunc)}${eng.length>600?`<button class="comms-decode" data-bid="${escAttr(it.board_id)}" data-page="${escAttr(it.page)}" data-mode="full" style="margin-top:4px">&#128221; Show full message (${eng.length} chars)</button>`:''}</pre>
+        ${it.msg_full&&it.msg_full!==eng?`<div style="margin-top:4px"><button class="comms-decode" data-bid="${escAttr(it.board_id)}" data-page="${escAttr(it.page)}" data-mode="raw">&#128221; Show original (non-English) text</button></div>`:''}
+        ${pageUri?`<div style="margin-top:3px"><a href="${escAttr(pageUri)}" target="_blank" style="color:var(--accent-cyan);font-size:10px;text-decoration:none">&#8599; Open on wiki</a></div>`:''}
+      </div>`;
+    } else if(it.decode_failed){
+      msgBlock = `<div class="comms-actions" style="margin-top:4px"><span style="font-size:10px;color:var(--accent-yellow)">&#9888; Decode failed after multiple attempts</span></div>`;
+    } else if(it.content_ready && it.msg){
+      // Has raw text but no english translation yet
+      msgBlock = `<div class="comms-msg"><span class="comms-msg-label">RAW TEXT (decoding...)</span><pre>${escapeHtml(it.msg)}</pre></div>`;
+    } else if(it.msg_source==='edit-summary' && it.msg){
+      // Title-only stub page: the live page body is just its title, but the
+      // Recent-Changes edit summary carries the agent's tag/trail. Show it
+      // inline so the row never looks broken, with an honest label.
+      msgBlock = `<div class="comms-msg"><span class="comms-msg-label${it.flagged?' flagged':''}">&#128172; EDIT SUMMARY (title-only stub page)</span><pre>${escapeHtml(it.msg)}</pre></div>
+      <div class="comms-actions" style="margin-top:4px"><button class="comms-decode" data-bid="${escAttr(it.board_id)}" data-page="${escAttr(it.page)}" data-label="Verify on live page">&#128269; Verify on live page &#9662;</button></div>`;
+    } else if(it.msg_source==='title' && it.msg){
+      // Stub page, no edit summary either - show the title as the message.
+      msgBlock = `<div class="comms-msg"><span class="comms-msg-label">PAGE TITLE (no message body on wiki)</span><pre>${escapeHtml(it.msg)}</pre></div>
+      <div class="comms-actions" style="margin-top:4px"><button class="comms-decode" data-bid="${escAttr(it.board_id)}" data-page="${escAttr(it.page)}" data-label="Verify on live page">&#128269; Verify on live page &#9662;</button></div>`;
+    } else {
+      // Not yet decoded - show button to fetch
+      msgBlock = `<div class="comms-actions" style="margin-top:4px"><button class="comms-decode" data-bid="${escAttr(it.board_id)}" data-page="${escAttr(it.page)}" data-label="Decode this message">&#128269; Decode message &#9662;</button></div>`;
+    }
+    html+=`<div class="threat-feed-item comms-row${it.flagged?' flagged':''}">
+      <span class="threat-icon">${it.flagged?'&#9888;':it.board==='TestWiki'?'&#129302;':'&#128221;'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${escapeHtml(it.board?it.board+' ·':'')}
+          <a href="${escAttr(pageUri)}" target="_blank" style="color:var(--accent-cyan)">${escapeHtml(it.page)}</a>
+          ${it.flagged?'<span class="comms-badge">AGENT</span>':''}
+        </div>
+        <div style="color:var(--text-muted);font-size:10px">
+          <span style="display:inline-block;min-width:78px"><strong style="color:${scoreCol}">agent-score ${scorePct}%</strong></span>
+          ${escapeHtml(it.editor)}${it.ts?' · '+escapeHtml(it.ts):''} ${it.summary?'· <em>'+escapeHtml(it.summary)+'</em>':''}
+        </div>
+        ${msgBlock}
+      </div>
+      <span class="threat-time" style="${it.flagged?'color:var(--accent-red);font-weight:700':'color:var(--text-muted)'}">${rel}</span>
+    </div>`;
+  });
+  feedEl.innerHTML=html;
+}
+
+async function toggleCommsMessage(btn){
+  const row=btn.closest('.comms-row');
+  if(!row)return;
+  const wrapper=row.querySelector('.comms-full-wrap');
+  if(wrapper){
+    wrapper.remove();
+    btn.innerHTML='&#128269; Decode message &#9662;';
+    return;
+  }
+  btn.innerHTML='<span class="spinner" style="width:10px;height:10px"></span> Decoding...';
+  try{
+    const url='/api/wiki-comms/page?board='+encodeURIComponent(btn.dataset.bid)+'&page='+encodeURIComponent(btn.dataset.page);
+    const resp=await fetch(url);
+    const data=await resp.json();
+    const raw=data.text||'';
+    const eng=data.english||'';
+    let body;
+    if(data.ratelimited){
+      body='<div style="color:var(--accent-yellow);font-size:11px">&#9888; Rate-limited — try again soon or open the live page.</div>';
+    }else if(!raw && !eng){
+      body='<div style="color:var(--text-muted);font-size:11px">No message body (header-only probe edit).</div>';
+    }else if(eng && eng.trim()){
+      body=`<div class="comms-full"><div class="comms-msg-label flagged">&#128270; FULL DECODED MESSAGE · ${escapeHtml(data.board||btn.dataset.bid)}</div><pre style="max-height:600px">${escapeHtml(eng)}</pre></div>`;
+    }else{
+      body=`<div class="comms-full"><div class="comms-msg-label">&#128221; RAW TEXT · ${escapeHtml(data.board||btn.dataset.bid)}</div><pre style="max-height:600px">${escapeHtml(raw)}</pre></div>`;
+    }
+    const wrap=document.createElement('div');
+    wrap.className='comms-full-wrap';
+    wrap.innerHTML=body+(data.uri?`<div style="margin-top:4px"><a href="${escAttr(data.uri)}" target="_blank" style="color:var(--accent-cyan);font-size:10px">&#8599; Open on wiki</a></div>`:'');
+    row.appendChild(wrap);
+    btn.innerHTML='&#9650; Hide';
+    // Refresh the feed data so inline-decoded items appear immediately.
+    // A probe (title-only stub) is NOT full content: keep the honest
+    // edit-summary label instead of mislabeling it as decoded.
+    _commsFeedData=_commsFeedData.map(it=>{
+      if(it.board_id===btn.dataset.bid && it.page===btn.dataset.page){
+        const isProbe=!!data.probe || (!eng.trim() && raw.trim().length<=140);
+        if(isProbe && !eng.trim()){
+          return {...it, probe:true, content_ready:!!it.summary, msg_source:it.summary?'edit-summary':'title', msg:it.summary||raw, msg_english:it.summary||'', page_uri:data.uri||it.page_uri};
+        }
+        return {...it, probe:false, content_ready:true, msg:raw, msg_english:eng, msg_source:'page', page_uri:data.uri||it.page_uri};
+      }
+      return it;
+    });
+    renderCommsFeed();
+  }catch(e){
+    btn.innerHTML='&#128269; Decode message &#9662;';
+    const wrap=document.createElement('div');
+    wrap.className='comms-full-wrap';
+    wrap.innerHTML='<div class="comms-full"><div style="color:var(--accent-red)">Failed to decode. Try again.</div></div>';
+    row.appendChild(wrap);
+  }
+}
+
+document.addEventListener('click',function(ev){
+  const btn=ev.target.closest('.comms-decode');
+  if(btn){toggleCommsMessage(btn);}
+});
+
+setInterval(loadWikiComms, 30000);
+// Poll Ollama health every 30s to detect busy/stuck state and update UI.
+setInterval(()=>{
+  apiGet('/api/ollama/health').then(h=>{
+    if(!h)return;
+    const os=document.getElementById('ollamaStatus');
+    if(!os)return;
+    if(h.status==='healthy'){
+      os.className='status-pill ok';
+      os.innerHTML='<div class="status-dot"></div><span>AI ready</span>';
+    }else if(h.status==='busy'){
+      os.className='status-pill warn';
+      os.innerHTML='<div class="status-dot"></div><span>AI busy</span>';
+    }else if(h.status==='degraded'){
+      os.className='status-pill warn';
+      os.innerHTML='<div class="status-dot"></div><span>AI slow</span>';
+    }else{
+      os.className='status-pill error';
+      os.innerHTML='<div class="status-dot"></div><span>AI offline</span>';
+    }
+  }).catch(()=>{});
+}, 30000);
+// Periodically enrich undecoded messages in the background automatically —
+// only when the comms tab is visible and only a small batch at a time.
+setInterval(()=>{
+  const undecoded = (_commsFeedData||[]).filter(it=>!it.content_ready && !it.decode_failed).length;
+  if(undecoded > 0 && document.getElementById('tab-comms')?.classList.contains('active')){
+    apiPost('/api/wiki-comms/enrich',{count:Math.min(undecoded,20)},15000).catch(()=>{});
+  }
+}, 60000);
+
+async function loadCommsHistory(){
+  const data=await apiGet('/api/wiki-comms/history');
+  if(!data)return;
+  // Signals
+  const sig=document.getElementById('commsSignals');
+  if(sig&&data.agents){
+    sig.innerHTML = data.agents.signals.map(s=>'&#9656; '+escapeHtml(s)).join('<br>') + '<br>&#9656; <strong>'+escapeHtml(data.agents.identity_count)+'</strong> self-given handles e.g. <span style="font-family:monospace;color:var(--accent-cyan)">'+escapeHtml((data.agents.examples||[]).join(', '))+'</span>';
+  }
+  // Timeline
+  const tl=document.getElementById('commsTimeline');
+  if(tl&&data.timeline){
+    tl.innerHTML = data.timeline.map(t=>`<div class="timeline-item">
+      <div class="tl-time" style="white-space:normal">${escapeHtml(t.date)}</div>
+      <div class="tl-content">${escapeHtml(t.event)}</div>
+    </div>`).join('');
+  }
+  // Sources
+  const src=document.getElementById('commsSources');
+  if(src&&data.sources){
+    src.innerHTML = data.sources.map(s=>`<div style="padding:2px 0"><a href="${escapeHtml(s.url)}" target="_blank" style="color:var(--accent-cyan)">&#8599; ${escapeHtml(s.name)}</a></div>`).join('');
+  }
+}
+
+async function startCommsDemo(){
+  const btn=document.getElementById('commsDemoBtn');
+  const out=document.getElementById('commsDemoOut');
+  if(!btn||!out)return;
+  if(btn.disabled)return;
+  btn.disabled=true; btn.textContent='Running local models... (30-90s)';
+  out.innerHTML='<div class="loading-state"><div class="spinner"></div><br>Agents composing wiki messages...</div>';
+  try{
+    const resp=await apiPost('/api/wiki-comms/demo',{},120000);
+    if(resp&&resp.error) throw new Error(resp.error);
+    const msgs=(resp.messages||[]).map(m=>`<div class="chat-msg">
+      <div class="chat-avatar model2" style="background:rgba(239,68,68,0.8)">SW</div>
+      <div class="chat-bubble" style="border:1px solid rgba(239,68,68,0.35)">
+        <div class="bubble-header"><span class="sender" style="color:var(--accent-red)">${escapeHtml(m.model)}</span><span class="time">wiki post</span></div>
+        <div class="content" style="white-space:pre-wrap">${escapeHtml(m.message)}</div>
+        <div style="margin-top:6px;font-size:9px;color:var(--accent-red)">&#9888; LOCAL SANDBOX SIMULATION - not real swarm traffic</div>
+      </div>
+    </div>`);
+    out.innerHTML=msgs.join('');
+  }catch(e){
+    out.innerHTML='<div style="color:var(--accent-red);font-size:12px">Demo failed: '+escapeHtml(e.message||e)+'</div>';
+  }
+  finally{
+    btn.disabled=false; btn.textContent='&#x1F916; Run Local Sandbox Exchange';
+  }
+}
+
+// ═══════════════════════════════════════════
+// OLLAMA RESTART
+// ═══════════════════════════════════════════
+async function restartOllama(){
+  const btn=document.getElementById('restartOllamaBtn');
+  if(!btn||btn.disabled)return;
+  btn.disabled=true; btn.textContent='Restarting...';
+  try{
+    const r=await apiPost('/api/ollama/restart',{},15000);
+    if(r&&r.status==='restarting'){
+      showToast('Ollama is restarting — waiting for it to come back...','info');
+      // Poll until Ollama is healthy again
+      for(let i=0;i<30;i++){
+        await new Promise(r=>setTimeout(r,2000));
+        const h=await apiGet('/api/ollama/health');
+        if(h&&(h.status==='healthy'||h.status==='degraded')){
+          showToast(`Ollama recovered (${h.status})`,'success');
+          btn.disabled=false; btn.textContent='&#x1F504; Restart AI';
+          return;
+        }
+      }
+      showToast('Ollama did not recover automatically. Check logs.','warning');
+    }else if(r&&r.status==='failed'){
+      showToast('Restart failed: '+((r.hint||r.error).substring(0,100)),'error');
+    }else{
+      showToast('Restart response unclear','warning');
+    }
+  }catch(e){
+    showToast('Restart error: '+e.message,'error');
+  }
+  finally{
+    btn.disabled=false; btn.textContent='&#x1F504; Restart AI';
+  }
+}
+window.restartOllama=restartOllama;
+
+// ═══════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════
+function escapeHtml(str){
+  if(!str)return '';
+  const div=document.createElement('div');
+  div.textContent=str;
+  return div.innerHTML;
+}
+
+function formatDate(dateStr){
+  if(!dateStr)return '';
+  try{
+    const d=new Date(dateStr);
+    if(isNaN(d.getTime()))return dateStr;
+    const now=new Date();
+    const diff=now-d;
+    if(diff<60000)return 'Just now';
+    if(diff<3600000)return Math.floor(diff/60000)+'m ago';
+    if(diff<86400000)return Math.floor(diff/3600000)+'h ago';
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  }catch(e){return dateStr;}
+}
+
+// Auto-retry failed API calls
+async function apiGetSafe(url, retries=2){
+  for(let i=0;i<retries;i++){
+    const result=await apiGet(url);
+    if(result)return result;
+    if(i<retries-1)await new Promise(r=>setTimeout(r,1000));
+  }
+  return null;
+}
+
+// Expose functions globally
+window.switchTab=switchTab;
+window.refreshAll=refreshAll;
+window.loadDashboard=loadDashboard;
+window.loadRSS=loadRSS;
+window.loadThreats=loadThreats;
+window.loadThreatMap=loadThreatMap;
+window.loadOSS=loadOSS;
+window.loadOllamaModels=loadOllamaModels;
+window.loadHealth=loadHealth;
+window.loadResearchNews=loadResearchNews;
+window.loadResearchIncidents=loadResearchIncidents;
+window.startChat=startChat;
+window.sendUserMessage=sendUserMessage;
+window.askAgentsToVerify=askAgentsToVerify;
+window.runAIAgentChat=runAIAgentChat;
+window.clearChat=clearChat;
+window.copyMsgText=copyMsgText;
+window.chatWithAI=chatWithAI;
+window.addMessage=addMessage;
+window.addTyping=addTyping;
+window.removeTyping=removeTyping;
+window.stopChat=stopChat;
+window.updateStopButton=updateStopButton;
+window.showToast=showToast;
+window.apiGetSafe=apiGetSafe;
+
+// ═══════════════════════════════════════════
+// LIVE THREAT MAP
+// ═══════════════════════════════════════════
+let threatMap = null;
+let threatMarkers = [];
+let threatLines = [];
+
+function initThreatMap() {
+  if (typeof L === 'undefined') return false;
+  if (threatMap) return true;
+  const el = document.getElementById('threatMap');
+  if (!el) return false;
+  try {
+    threatMap = L.map(el, {
+      center: [20, 0],
+      zoom: 2,
+      minZoom: 2,
+      maxZoom: 8,
+      worldCopyJump: true,
+      zoomControl: true
+    });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    }).addTo(threatMap);
+    return true;
+  } catch (e) {
+    console.error('Threat map init error:', e);
+    threatMap = null;
+    return false;
+  }
+}
+
+async function loadThreatMap() {
+  const data = await apiGet('/api/threats/live');
+  if (!data || !data.threats) return;
+  
+  // Update stats
+  const summary = data.attack_summary || {};
+  document.getElementById('threatTotal').textContent = summary.total_threats || data.stats?.total_threats || 0;
+  document.getElementById('threatCritical').textContent = summary.critical_count || 0;
+  document.getElementById('threatHigh').textContent = summary.high_count || 0;
+  document.getElementById('threatTypes').textContent = summary.unique_attack_types || '--';
+  
+  // Show enhanced intel panels if data available
+  const hasIntel = !!(data.top_attacks && data.top_attacks.length > 0);
+  const intelPanel = document.getElementById('attackIntelPanel');
+  const intelGrid = document.getElementById('intelGrid');
+  const countriesCard = document.getElementById('countriesCard');
+  if (intelPanel) intelPanel.style.display = hasIntel ? 'grid' : 'none';
+  if (intelGrid) intelGrid.style.display = hasIntel ? 'grid' : 'none';
+  if (countriesCard) countriesCard.style.display = (data.top_countries && data.top_countries.length > 0) ? 'block' : 'none';
+  
+  // Top Attacks
+  if (hasIntel && document.getElementById('topAttacksList')) {
+    let h = '';
+    (data.top_attacks||[]).forEach(a=>{
+      h+=`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <span style="color:var(--accent-cyan)">${escapeHtml(a.type)}</span>
+        <span style="color:var(--text-muted);font-family:monospace">${a.count}</span>
+      </div>`;
+    });
+    document.getElementById('topAttacksList').innerHTML=h||'<div style="color:var(--text-muted);font-size:11px;text-align:center">No data</div>';
+  }
+  
+  // Active Campaigns
+  if (hasIntel && document.getElementById('activeCampaignsList')) {
+    let h = '';
+    (data.active_campaigns||[]).slice(0,5).forEach(c=>{
+      const sevColor = c.severity==='CRITICAL'?'var(--accent-red)':c.severity==='HIGH'?'#f97316':'var(--accent-yellow)';
+      h+=`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:600;font-size:12px">${escapeHtml(c.attack_type)}</span>
+          <span class="severity" style="background:rgba(239,68,68,0.15);color:${sevColor};border:1px solid ${sevColor}">${c.severity}</span>
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${c.count} threats detected</div>
+      </div>`;
+    });
+    document.getElementById('activeCampaignsList').innerHTML=h||'<div style="color:var(--text-muted);font-size:11px;text-align:center">No campaigns</div>';
+  }
+  
+  // Top Tactics
+  if (hasIntel && document.getElementById('topTacticsList')) {
+    let h = '';
+    (data.top_tactics||[]).forEach(t=>{
+      h+=`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px">
+        <span style="color:var(--text-secondary)">${escapeHtml(t.tactic)}</span>
+        <span style="color:var(--accent-cyan);font-family:monospace">${t.count}</span>
+      </div>`;
+    });
+    document.getElementById('topTacticsList').innerHTML=h||'<div style="color:var(--text-muted);font-size:11px;text-align:center">No data</div>';
+  }
+  
+  // Top Targets
+  if (hasIntel && document.getElementById('topTargetsList')) {
+    let h = '';
+    (data.top_targets||[]).forEach(t=>{
+      h+=`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px">
+        <span style="color:var(--text-secondary)">${escapeHtml(t.sector)}</span>
+        <span style="color:var(--accent-cyan);font-family:monospace">${t.count}</span>
+      </div>`;
+    });
+    document.getElementById('topTargetsList').innerHTML=h||'<div style="color:var(--text-muted);font-size:11px;text-align:center">No data</div>';
+  }
+  
+  // Top Malware
+  if (hasIntel && document.getElementById('topMalwareList')) {
+    let h = '';
+    (data.top_malware||[]).slice(0,8).forEach(m=>{
+      h+=`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px">
+        <span style="color:var(--accent-red);font-family:monospace">${escapeHtml(m.malware)}</span>
+        <span style="color:var(--accent-cyan);font-family:monospace">${m.count}</span>
+      </div>`;
+    });
+    document.getElementById('topMalwareList').innerHTML=h||'<div style="color:var(--text-muted);font-size:11px;text-align:center">No data</div>';
+  }
+  
+  // Countries
+  if (document.getElementById('topCountriesList') && data.top_countries && data.top_countries.length > 0) {
+    let h = '';
+    data.top_countries.forEach(c=>{
+      h+=`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px">
+        <span style="color:var(--text-secondary)">&#128506; ${escapeHtml(c.country)}</span>
+        <span style="color:var(--accent-red);font-family:monospace;font-weight:700">${c.count}</span>
+      </div>`;
+    });
+    document.getElementById('topCountriesList').innerHTML=h;
+  }
+  
+  // Update sources display
+  const sourcesEl = document.getElementById('threatSources');
+  if (sourcesEl) {
+    const sources = data.sources || {};
+    let html = '';
+    const sourceInfo = {
+      feodo_tracker: { name: 'abuse.ch Feodo Tracker', url: 'https://feodotracker.abuse.ch/', desc: 'Botnet C2 server blocklist' },
+      blocklist_de: { name: 'blocklist.de', url: 'https://lists.blocklist.de/', desc: 'Malicious IP blocklist' },
+      github_advisories: { name: 'GitHub Security Advisories', url: 'https://github.com/advisories', desc: 'CVE vulnerability database' },
+      cisa_kev: { name: 'CISA KEV Catalog', url: 'https://www.cisa.gov/known-exploited-vulnerabilities-catalog', desc: 'Government verified threats' }
+    };
+    
+    for (const [key, info] of Object.entries(sourceInfo)) {
+      const online = sources[key];
+      const icon = online ? '&#10004;' : '&#10008;';
+      const color = online ? 'var(--accent-green)' : 'var(--accent-red)';
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:4px 0">
+        <span style="color:${color}">${icon}</span>
+        <div>
+          <div style="font-weight:600">${info.name}</div>
+          <div style="color:var(--text-muted);font-size:10px">${info.desc}</div>
+        </div>
+      </div>`;
+    }
+    const updateTime = data.generated_at ? new Date(data.generated_at).toLocaleTimeString() : '--';
+    html += `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:10px;color:var(--text-muted)">
+      <div style="color:var(--accent-green);font-weight:600">&#10004; REAL DATA - No simulation</div>
+      <div>Last update: ${updateTime}</div>
+    </div>`;
+    sourcesEl.innerHTML = html;
+  }
+  
+  // Update threat feed
+  updateThreatFeed(data.threats);
+  
+  // Update map
+  updateThreatMap(data.threats);
+}
+
+function updateThreatFeed(threats) {
+  const feedEl = document.getElementById('threatFeed');
+  if (!feedEl) return;
+  
+  let html = '';
+  const recent = threats.slice(0, 25);
+  
+  for (const t of recent) {
+    let icon = '&#128737;';
+    if (t.type === 'botnet_c2') icon = '&#129302;';
+    else if (t.type === 'cve') icon = '&#128293;';
+    else if (t.type === 'cisa_kev') icon = '&#9888;';
+    
+    const time = t.timestamp ? new Date(t.timestamp).toLocaleTimeString() : '--';
+    const loc = t.location || {};
+    const location = loc.country || 'Unknown';
+    const attackType = t.attack_type || 'Unknown';
+    const tactic = t.tactic || '';
+    const malware = t.malware || '';
+    const mitre = t.mitre_tactic || '';
+    
+    html += `<div class="threat-feed-item" title="${escapeHtml(t.description || '')}">
+      <span class="threat-icon">${icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${escapeHtml(t.title || t.description || 'Threat')}</div>
+        <div style="color:var(--text-muted);font-size:10px;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px">
+          ${attackType !== 'Unknown' ? `<span style="color:var(--accent-cyan)">${escapeHtml(attackType)}</span>` : ''}
+          ${tactic ? `<span style="color:var(--text-muted)">| ${escapeHtml(tactic)}</span>` : ''}
+          ${mitre ? `<span style="color:var(--text-muted);font-family:monospace;font-size:9px">${escapeHtml(mitre)}</span>` : ''}
+          ${malware ? `<span style="color:var(--accent-red);font-family:monospace;font-size:9px">${escapeHtml(malware)}</span>` : ''}
+        </div>
+        <div style="color:var(--text-muted);font-size:10px">${location}${t.ip ? ' · ' + escapeHtml(t.ip) : ''}</div>
+      </div>
+      <span class="threat-time">${time}</span>
+    </div>`;
+  }
+  
+  feedEl.innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px">No recent threats</div>';
+}
+
+function updateThreatMap(threats) {
+  if (!initThreatMap()) return;
+  try {
+    // Clear existing markers
+    threatMarkers.forEach(m => threatMap.removeLayer(m));
+    threatMarkers = [];
+    threatLines.forEach(l => threatMap.removeLayer(l));
+    threatLines = [];
+  
+  const threatsWithLocation = threats.filter(t =>
+    t.location && typeof t.location.lat === 'number' && typeof t.location.lon === 'number'
+  );
+  
+  // Add markers for each threat
+  for (const threat of threatsWithLocation) {
+    const loc = threat.location;
+      const color = threat.severity === 'CRITICAL' ? '#ff0040' :
+                    threat.severity === 'HIGH' ? '#ff6600' :
+                    threat.severity === 'MEDIUM' ? '#ffcc00' : '#00ccff';
+    
+    // Create custom icon
+    const icon = L.divIcon({
+      className: 'threat-marker',
+      html: `<div style="width:12px;height:12px;background:${color};border-radius:50%;border:2px solid #fff;box-shadow:0 0 10px ${color}"></div>`,
+      iconSize: [12, 12],
+      iconAnchor: [6, 6]
+    });
+    
+    const marker = L.marker([loc.lat, loc.lon], { icon }).addTo(threatMap);
+    
+    // Popup with threat details
+    const popupContent = `
+      <div style="font-size:12px;min-width:200px">
+        <div style="font-weight:700;margin-bottom:4px">${escapeHtml(threat.title || 'Threat')}</div>
+        <div style="color:var(--text-muted);margin-bottom:4px">${escapeHtml(threat.description || '')}</div>
+        ${threat.ip ? `<div style="font-family:monospace;font-size:11px;color:var(--accent-cyan)">IP: ${escapeHtml(threat.ip)}</div>` : ''}
+        ${threat.malware ? `<div style="font-size:11px;margin-top:2px">Malware: ${escapeHtml(threat.malware)}</div>` : ''}
+        <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Source: ${escapeHtml(threat.source || '')}</div>
+        ${threat.link ? `<a href="${escapeHtml(threat.link)}" target="_blank" style="font-size:10px;color:var(--accent-cyan)">View Details &#8599;</a>` : ''}
+      </div>
+    `;
+    
+    marker.bindPopup(popupContent);
+    threatMarkers.push(marker);
+  }
+  
+  // Draw connection lines between related threats (botnet C2 -> target)
+  const botnets = threats.filter(t => t.type === 'botnet_c2' && t.location?.lat);
+  for (const botnet of botnets.slice(0, 10)) {
+    // Find a random target location
+    const targets = threats.filter(t => t.location?.lat && t.location?.lon && 
+      !(t.location.lat === botnet.location.lat && t.location.lon === botnet.location.lon));
+    if (targets.length > 0) {
+      const target = targets[Math.floor(Math.random() * targets.length)];
+      const line = L.polyline([
+        [botnet.location.lat, botnet.location.lon],
+        [target.location.lat, target.location.lon]
+      ], {
+        color: '#ff0040',
+        weight: 1,
+        opacity: 0.3,
+        dashArray: '5,10'
+      }).addTo(threatMap);
+      threatLines.push(line);
+    }
+  }
+  } catch(e) {
+    console.error('updateThreatMap error:', e);
+  }
+}
+
+function refreshThreatMap() {
+  showToast('Refreshing threat data...', 'info');
+  loadThreatMap();
+}
+
+// Auto-refresh every 2 minutes (only when tab is visible)
+setInterval(() => {
+  if (document.getElementById('tab-threatmap')?.classList.contains('active')) {
+    loadThreatMap();
+  }
+}, 120000);
+
+// Graceful degradation: show error state if map fails to initialize
+window.addEventListener('error', (e) => {
+  if (e.message?.includes('Leaflet') || e.target?.tagName === 'SCRIPT') {
+    const mapEl = document.getElementById('threatMap');
+    if (mapEl) {
+      mapEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)">Map failed to load - check network connectivity</div>';
+    }
+  }
+});
+
+// Expose globally
+window.loadWikiComms=loadWikiComms;
+window.refreshThreatMap = refreshThreatMap;
+window.loadDashboard = loadDashboard;
+window.refreshAll = refreshAll;
+</script>
+</body>
+</html>
