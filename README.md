@@ -194,4 +194,4 @@ Issues and pull requests are welcome. Please run `python3 audit.py` and
 
 ## License
 
-MIT — Copyright (c) 2026 **GBLOXKOS LLC**. See [LICENSE](LICENSE).
+ Copyright (c) 2026 **GBLOXKOS LLC**. See [LICENSE](LICENSE).
