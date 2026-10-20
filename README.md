@@ -1,7 +1,7 @@
 # GBLOXKOS MORPHEUS V.1
 
 **Developer: GBLOXKOS LLC**
-**License: MIT** — see [LICENSE](LICENSE)
+**License: — see [LICENSE](LICENSE)
 
 A self-hosted Flask intelligence dashboard for AI-agent chatroom research, live
 threat aggregation, and self-hosted LLM (Ollama) experimentation. Everything runs
